@@ -1,0 +1,3390 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Periodická tabulka prvků</title>
+  <style>
+    :root {
+      --bg: #f6f7f3;
+      --panel: #ffffff;
+      --ink: #18201f;
+      --muted: #697371;
+      --line: rgba(24, 32, 31, .13);
+      --shadow: 0 22px 70px rgba(22, 28, 26, .14);
+      --radius: 8px;
+      --alkali: #e54949;
+      --alkaline: #ee8c2f;
+      --transition: #d3a11f;
+      --metal: #4f9e61;
+      --metalloid: #2f9c91;
+      --nonmetal: #3497c9;
+      --halogen: #7169d9;
+      --noble: #a556c5;
+      --lanthanide: #c95d8f;
+      --actinide: #8d6b4f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.72), rgba(246,247,243,.96) 44%),
+        radial-gradient(circle at 12% 8%, rgba(47,156,145,.13), transparent 28%),
+        radial-gradient(circle at 86% 12%, rgba(229,73,73,.11), transparent 24%),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1540px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 30px 0 48px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 22px;
+    }
+
+    header.quiz-mode > div,
+    header.quiz-mode .toolbar {
+      display: none;
+    }
+    header.quiz-mode {
+      margin-bottom: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 4.4rem);
+      line-height: .95;
+      letter-spacing: 0;
+      animation: elementEnter .35s ease backwards;
+    }
+
+    .lead {
+      max-width: 680px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.55;
+      animation: elementEnter .35s ease backwards;
+      animation-delay: 80ms;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      max-width: 720px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 32px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.72);
+      color: #27302e;
+      font-size: .78rem;
+      font-weight: 650;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background .16s ease, color .16s ease, border-color .16s ease, box-shadow .16s ease;
+      touch-action: manipulation;
+    }
+
+    .chip.active {
+      background: #17201e;
+      color: white;
+      border-color: #17201e;
+      box-shadow: 0 12px 28px rgba(22,28,26,.18);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--color);
+    }
+
+    .table-shell {
+      position: relative;
+      padding: 12px;
+      border: 1px solid rgba(24,32,31,.1);
+      border-radius: 16px;
+      background: rgba(255,255,255,.72);
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .table-shell.hidden {
+      display: none;
+    }
+
+    .periodic-table {
+      position: relative;
+      display: grid;
+      grid-template-columns: 40px repeat(18, minmax(64px, 1fr));
+      grid-template-rows: 40px repeat(10, 76px);
+      grid-auto-rows: 76px;
+      gap: 7px;
+      min-width: 1330px;
+    }
+
+    .axis-label {
+      display: grid;
+      place-items: center;
+      min-width: 0;
+      border: 1px solid rgba(24,32,31,.12);
+      border-radius: 8px;
+      background: rgba(255,255,255,.78);
+      color: #45504e;
+      font-size: .7rem;
+      font-weight: 850;
+      line-height: 1.05;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background .16s ease, color .16s ease, transform .16s ease, box-shadow .16s ease;
+    }
+
+    .axis-label.column {
+      min-height: 40px;
+      grid-row: 1;
+    }
+
+    .axis-label span {
+      display: block;
+      color: inherit;
+      font-size: .57rem;
+      opacity: .82;
+    }
+
+    .axis-label:hover,
+    .axis-label.active {
+      background: #17201e;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(22,28,26,.18);
+    }
+
+    .element {
+      --color: #919995;
+      position: relative;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 2px;
+      min-width: 0;
+      padding: 7px;
+      border: 1px solid color-mix(in srgb, var(--color) 28%, white);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--color) 18%, white);
+      color: #17201e;
+      cursor: default;
+      transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
+      touch-action: manipulation;
+    }
+
+    @keyframes elementEnter {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .chip, .axis-label, .element {
+      animation: elementEnter .35s ease backwards;
+    }
+
+    .quiz-btn {
+      animation: elementEnter .35s ease backwards;
+    }
+
+    .element.is-rich {
+      background: linear-gradient(145deg, color-mix(in srgb, var(--color) 86%, white), var(--color));
+      border-color: color-mix(in srgb, var(--color) 75%, black);
+      color: white;
+      box-shadow: 0 10px 28px color-mix(in srgb, var(--color) 34%, transparent);
+    }
+
+    .periodic-table.is-filtering .element.is-rich:not(.temp-rich) {
+      background: color-mix(in srgb, var(--color) 18%, white);
+      border-color: color-mix(in srgb, var(--color) 28%, white);
+      color: #17201e;
+      box-shadow: none;
+    }
+
+    .element.temp-rich {
+      background: linear-gradient(145deg, color-mix(in srgb, var(--color) 86%, white), var(--color));
+      border-color: color-mix(in srgb, var(--color) 75%, black);
+      color: white;
+      box-shadow: 0 10px 28px color-mix(in srgb, var(--color) 34%, transparent);
+    }
+
+    .element:hover,
+    .element:focus-visible {
+      z-index: 20;
+      transform: translateY(-4px);
+      border-color: color-mix(in srgb, var(--color) 70%, black);
+      box-shadow: 0 18px 42px rgba(22,28,26,.22);
+      outline: none;
+    }
+
+    .number {
+      font-size: .67rem;
+      font-weight: 700;
+      opacity: .8;
+    }
+
+    .symbol {
+      align-self: center;
+      font-size: 1.62rem;
+      line-height: 1;
+      font-weight: 850;
+      letter-spacing: 0;
+    }
+
+    .name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: .66rem;
+      font-weight: 720;
+      opacity: .92;
+    }
+
+    .popover {
+      display: none;
+    }
+
+    .wiki-tooltip {
+      position: fixed;
+      width: 370px;
+      padding: 12px;
+      border: 1px solid rgba(24,32,31,.12);
+      border-radius: 10px;
+      background: rgba(255,255,255,.96);
+      box-shadow: 0 18px 55px rgba(21,27,25,.24);
+      color: var(--ink);
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity .14s ease, transform .14s ease;
+      backdrop-filter: blur(12px);
+      overflow: visible;
+    }
+
+    .wiki-tooltip.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .wiki-tooltip h2 {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 0 8px;
+      font-size: 1.18rem;
+      letter-spacing: 0;
+    }
+
+    .wiki-tooltip .big-symbol {
+      color: var(--color);
+      font-size: 1.55rem;
+      font-weight: 900;
+    }
+
+    .tooltip-media {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 10px;
+      overflow: visible;
+    }
+
+    .visuals {
+      position: relative;
+      display: grid;
+      grid-template-columns: 104px 104px 1fr;
+      gap: 10px;
+      align-items: stretch;
+      overflow: visible;
+      padding: 22px;
+      margin: -22px;
+    }
+
+    .element-image,
+    .atom-diagram,
+    .wiki-link {
+      position: relative;
+      width: 104px;
+      height: 104px;
+      border-radius: 8px;
+      background: #eef2ee;
+      border: 1px solid rgba(24,32,31,.08);
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      transform-origin: center;
+    }
+
+    .element-image::before,
+    .atom-diagram::before,
+    .wiki-link::before {
+      content: "";
+      position: absolute;
+      inset: -18px;
+    }
+
+    .element-image.zoomed,
+    .atom-diagram.zoomed {
+      transform: scale(var(--zoom, 1.75));
+      border-color: color-mix(in srgb, var(--color) 55%, white);
+      box-shadow: 0 26px 70px rgba(21,27,25,.32);
+      z-index: 15;
+    }
+
+    .element-image {
+      object-fit: cover;
+      display: block;
+    }
+
+    .element-image.loaded {
+      background: white;
+    }
+
+    .atom-diagram {
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,.92), rgba(238,242,238,.82)),
+        #eef2ee;
+    }
+
+    .nucleus {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--color);
+      color: white;
+      font-size: .7rem;
+      font-weight: 850;
+      box-shadow: 0 7px 18px color-mix(in srgb, var(--color) 34%, transparent);
+      transform: translate(-50%, -50%) scale(var(--nucleus-scale, 1));
+      text-align: center;
+      line-height: 1;
+    }
+
+    .nucleus small {
+      display: block;
+      margin-top: 2px;
+      font-size: .45rem;
+      font-weight: 760;
+      opacity: .92;
+    }
+
+    .atom-shell {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      border-radius: 50%;
+      border: 1px solid color-mix(in srgb, var(--color) 44%, white);
+      transform: translate(-50%, -50%);
+    }
+
+    .atom-electron {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #17201e;
+      box-shadow: 0 0 0 1.5px rgba(255,255,255,.78);
+      transform: translate(-50%, -50%) rotate(var(--angle)) translateX(var(--radius)) rotate(calc(-1 * var(--angle))) scale(var(--electron-scale, 1));
+    }
+
+    .tooltip-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .facts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin: 0;
+    }
+
+    .fact {
+      padding: 7px;
+      border-radius: 7px;
+      background: #f3f5f1;
+    }
+
+    .fact span {
+      display: block;
+      color: var(--muted);
+      font-size: .64rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .fact strong {
+      display: block;
+      overflow-wrap: anywhere;
+      font-size: .76rem;
+      line-height: 1.2;
+    }
+
+    .safety {
+      position: relative;
+      display: inline-flex;
+      width: fit-content;
+      min-height: 30px;
+      align-items: center;
+      gap: 7px;
+      padding: 0 9px;
+      border-radius: 8px;
+      background: #f3f5f1;
+      color: #34413e;
+      font-size: .75rem;
+      font-weight: 800;
+      cursor: help;
+    }
+
+    .safety-card {
+      position: absolute;
+      left: 0;
+      bottom: calc(100% + 4px);
+      width: 380px;
+      padding: 10px;
+      border: 1px solid rgba(24,32,31,.12);
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 18px 42px rgba(21,27,25,.2);
+      color: #42504d;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(6px);
+      transition: opacity .14s ease, transform .14s ease;
+      z-index: 30;
+    }
+
+    .safety-card::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      height: 12px;
+    }
+
+    .safety.hover .safety-card,
+    .safety:focus-within .safety-card,
+    .safety.open .safety-card {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .safety-card strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink);
+      font-size: .8rem;
+    }
+
+    .safety-row {
+      margin-top: 6px;
+      font-size: .74rem;
+      line-height: 1.35;
+    }
+
+    .rs-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 5px;
+    }
+
+    .rs-chip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 8px;
+      border-radius: 7px;
+      background: #17201e;
+      color: white;
+      font-size: .72rem;
+      font-weight: 850;
+    }
+
+    .rs-detail {
+      position: absolute;
+      left: 0;
+      bottom: calc(100% + 3px);
+      width: 300px;
+      padding: 8px;
+      border: 1px solid rgba(24,32,31,.12);
+      border-radius: 8px;
+      background: white;
+      color: #42504d;
+      box-shadow: 0 16px 36px rgba(21,27,25,.2);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(5px);
+      transition: opacity .14s ease, transform .14s ease;
+      z-index: 40;
+    }
+
+    .rs-detail::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      height: 10px;
+    }
+
+    .rs-detail ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .rs-detail li {
+      margin: 3px 0;
+    }
+
+    .rs-chip.hover .rs-detail,
+    .rs-chip:focus-within .rs-detail,
+    .rs-chip.open .rs-detail {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .ghs-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .ghs-mark {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      transform: rotate(45deg);
+      overflow: hidden;
+    }
+
+    .ghs-mark svg,
+    .ghs-mark img,
+    .ghs-mark span {
+      transform: rotate(-45deg);
+    }
+
+    .ghs-mark img {
+      width: 31px;
+      height: 31px;
+      object-fit: contain;
+      display: block;
+      background: none;
+    }
+
+    .safety-icons {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      margin-right: 2px;
+      flex-wrap: wrap;
+    }
+
+    .safety-icons .ghs-mark {
+      width: 28px;
+      height: 28px;
+      border-width: 2px;
+      flex: 0 0 auto;
+    }
+
+    .safety-icons .ghs-mark img {
+      width: 19px;
+      height: 19px;
+    }
+
+    .safety-label {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      font-size: .76rem;
+      font-weight: 800;
+      letter-spacing: 0;
+      white-space: nowrap;
+      gap: 0;
+    }
+
+    .wiki-tooltip p {
+      margin: 0;
+      color: #42504d;
+      font-size: .82rem;
+      line-height: 1.45;
+    }
+
+    .wiki-link {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #17201e;
+      color: white;
+      font-size: .82rem;
+      font-weight: 760;
+      text-decoration: none;
+      text-align: center;
+      line-height: 1.2;
+      padding: 10px;
+    }
+
+    .wiki-link:hover {
+      background: var(--color);
+      border-color: color-mix(in srgb, var(--color) 55%, white);
+    }
+
+    .wiki-link span {
+      display: block;
+      margin-top: 7px;
+      font-size: 1.35rem;
+      line-height: 1;
+    }
+
+    .atom-meta {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: .73rem;
+      font-weight: 750;
+    }
+
+    .quiz {
+      margin: 26px auto 0;
+      max-width: 880px;
+      border: 1px solid rgba(24,32,31,.1);
+      border-radius: 16px;
+      background: rgba(255,255,255,.82);
+      box-shadow: 0 16px 48px rgba(22,28,26,.1);
+      transition: padding .3s ease, box-shadow .3s ease;
+    }
+
+    .quiz.closed {
+      margin: 26px auto 0;
+      padding: 6px;
+    }
+
+    .quiz.closed:hover {
+      box-shadow: 0 18px 52px rgba(22,28,26,.16);
+    }
+
+    .quiz.open {
+      margin: auto;
+      padding: 18px;
+    }
+
+    .quiz-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border: 0;
+      border-radius: 12px;
+      background: #17201e;
+      color: white;
+      font: inherit;
+      font-size: 1.05rem;
+      font-weight: 760;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    .quiz-btn:hover {
+      background: #2f3a37;
+    }
+
+    .quiz-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .quiz-body {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height .4s ease, opacity .3s ease;
+    }
+
+    .quiz-body.visible {
+      max-height: 600px;
+      opacity: 1;
+    }
+
+    .mode-switch {
+      display: grid;
+      width: 100%;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #f1f3ef;
+    }
+
+    button {
+      min-height: 40px;
+      border: 0;
+      border-radius: 8px;
+      font: inherit;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    .mode-switch button {
+      padding: 0 12px;
+      background: transparent;
+      color: #43504d;
+      white-space: nowrap;
+    }
+
+    .mode-switch button.active {
+      background: #17201e;
+      color: white;
+      box-shadow: 0 5px 15px rgba(22,28,26,.16);
+    }
+
+    .quiz-card {
+      display: block;
+    }
+
+    .quiz-card .score {
+      float: right;
+      margin: 0 0 8px 12px;
+      line-height: inherit;
+    }
+
+    .question {
+      min-height: 86px;
+      padding: 16px;
+      border-radius: 12px;
+      background: #f3f6f0;
+      border: 1px solid rgba(24,32,31,.08);
+    }
+
+    .question small {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-weight: 760;
+    }
+
+    .question strong {
+      font-size: clamp(1.9rem, 5vw, 3.2rem);
+      line-height: 1;
+    }
+
+    .answer-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    input {
+      width: 100%;
+      min-height: 44px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: var(--ink);
+      font: inherit;
+      font-weight: 650;
+    }
+
+    input:focus {
+      border-color: #2f9c91;
+      outline: 3px solid rgba(47,156,145,.18);
+    }
+
+    .primary {
+      padding: 0 16px;
+      background: #2f9c91;
+      color: white;
+    }
+
+    .secondary {
+      padding: 0 16px;
+      background: #17201e;
+      color: white;
+    }
+
+    .feedback {
+      min-height: 24px;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-weight: 720;
+    }
+
+    .feedback.ok {
+      color: #247846;
+    }
+
+    .feedback.bad {
+      color: #b33b35;
+    }
+
+    .score {
+      color: var(--muted);
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .quiz-results {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 12px;
+      background: #f3f6f0;
+      border: 1px solid rgba(24,32,31,.08);
+    }
+
+    .quiz-results h3 {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+    }
+
+    .quiz-results ul {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+
+    .quiz-results li {
+      margin: 4px 0;
+      font-size: .85rem;
+    }
+
+    .quiz-results .wrong {
+      color: #b33b35;
+    }
+
+    .quiz-results .right {
+      color: #247846;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        width: min(100vw - 20px, 1540px);
+        padding-top: 18px;
+      }
+
+      header,
+      .quiz-top,
+      .quiz-card {
+        display: block;
+      }
+
+      .toolbar {
+        justify-content: flex-start;
+        margin-top: 18px;
+      }
+
+      .answer-row {
+        grid-template-columns: 1fr;
+      }
+
+      .score {
+        float: none;
+        display: block;
+        margin-top: 12px;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .wiki-tooltip {
+        width: calc(100vw - 20px);
+        max-width: 370px;
+      }
+
+      .visuals {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .wiki-link {
+        grid-column: 1 / -1;
+        width: auto;
+        height: 48px;
+        flex-direction: row;
+        gap: 8px;
+      }
+
+      .wiki-link span {
+        margin-top: 0;
+        font-size: 1rem;
+      }
+
+      .safety-card {
+        width: calc(100vw - 40px);
+        max-width: 380px;
+      }
+
+      .rs-detail {
+        width: calc(100vw - 40px);
+        max-width: 300px;
+      }
+
+      .mode-switch {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .score {
+        float: none;
+        display: block;
+        margin-top: 8px;
+      }
+
+      .element .symbol {
+        font-size: 1.2rem;
+      }
+
+      .element .name {
+        font-size: .55rem;
+      }
+
+      .element .number {
+        font-size: .55rem;
+      }
+
+      .quiz.open {
+        margin: auto;
+        padding: 12px;
+      }
+
+      .answer-row {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .table-shell {
+        padding: 6px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .visuals {
+        grid-template-columns: 1fr;
+      }
+
+      .element-image,
+      .atom-diagram {
+        width: 100%;
+        height: 80px;
+      }
+
+      .quiz-btn {
+        padding: 12px;
+        font-size: .95rem;
+      }
+
+      .question strong {
+        font-size: 1.6rem;
+      }
+
+      .answer-row {
+        grid-template-columns: 1fr;
+      }
+
+      .mode-switch button {
+        font-size: .72rem;
+        padding: 6px 10px;
+      }
+
+      .element {
+        padding: 3px;
+        gap: 1px;
+      }
+
+      .element .symbol {
+        font-size: 1rem;
+      }
+
+      .element .name,
+      .element .number {
+        font-size: .48rem;
+      }
+
+      .periodic-table {
+        gap: 3px;
+      }
+
+      .axis-label {
+        font-size: .55rem;
+      }
+
+      h1 {
+        font-size: clamp(1.5rem, 6vw, 2rem);
+      }
+
+      .lead {
+        font-size: .88rem;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .quiz-btn {
+        padding: 10px;
+        font-size: .85rem;
+      }
+
+      .quiz.open {
+        padding: 8px;
+      }
+
+      .quiz-body.visible {
+        max-height: 520px;
+      }
+
+      .element {
+        padding: 2px;
+      }
+
+      .element .symbol {
+        font-size: .85rem;
+      }
+
+      .element .name,
+      .element .number {
+        font-size: .42rem;
+      }
+
+      .periodic-table {
+        gap: 2px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Periodická tabulka prvků</h1>
+        <p class="lead">Barevné skupiny jsou rozlišené podle typu prvku. Prvky z tvého seznamu jsou syté, ostatní zůstávají ve světlé variantě. Najetím na prvek otevřeš stručnou wiki kartu.</p>
+      </div>
+      <div class="toolbar" id="legend" aria-label="Legenda skupin"></div>
+    </header>
+
+    <section class="table-shell" id="tableShell" aria-label="Periodická tabulka">
+      <div class="periodic-table" id="periodicTable"></div>
+    </section>
+
+    <section class="quiz closed" aria-label="Test prvků">
+      <button id="quizToggle" class="quiz-btn">Otestovat se</button>
+
+      <div class="quiz-body" id="quizBody">
+        <div class="quiz-top">
+          <div class="mode-switch" role="group" aria-label="Režim testu">
+            <button type="button" class="active" data-mode="symbolToName">Značka -> název</button>
+            <button type="button" data-mode="nameToSymbol">Název -> značka</button>
+            <button type="button" data-mode="mixed">Obojí</button>
+            <button type="button" data-mode="all">Procvičit všechny</button>
+          </div>
+        </div>
+
+        <div class="quiz-card" id="quizCard">
+          <div>
+            <div class="question">
+              <span class="score" id="score">0 / 0</span>
+              <small id="questionLabel">Napiš název prvku</small>
+              <strong id="questionText">H</strong>
+            </div>
+            <div class="answer-row">
+              <input id="answerInput" autocomplete="off" placeholder="Tvoje odpověď">
+              <button type="button" class="primary" id="checkAnswer">Zkontrolovat</button>
+              <button type="button" class="secondary" id="nextQuestion">Další</button>
+              <button type="button" class="secondary" id="giveUp">Vzdát se</button>
+            </div>
+            <p class="feedback" id="feedback"></p>
+          </div>
+        </div>
+
+        <div class="quiz-results" id="quizResults" style="display:none">
+          <h3>Výsledky</h3>
+          <p id="resultsSummary"></p>
+          <ul id="resultsList"></ul>
+          <button type="button" class="secondary" id="resultsClose">Zavřít</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Sem doplň značky prvků, které mají být sytě vybarvené, např. ["H", "O", "Na"].
+    const saturatedSymbols = new Set([
+      "H", "He",
+      "Li", "Be", "B", "C", "N", "O", "F", "Ne",
+      "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar",
+      "K", "Ca", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr",
+      "Rb", "Sr", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe",
+      "Cs", "Ba", "W", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn",
+      "Fr", "Ra"
+    ]);
+
+    const groups = {
+      alkali: { label: "Alkalické kovy", color: "#e54949" },
+      alkaline: { label: "Kovy alkalických zemin", color: "#ee8c2f" },
+      transition: { label: "Přechodné kovy", color: "#d3a11f" },
+      metal: { label: "Kovy", color: "#4f9e61" },
+      metalloid: { label: "Polokovy", color: "#2f9c91" },
+      nonmetal: { label: "Nekovy", color: "#3497c9" },
+      halogen: { label: "Halogeny", color: "#7169d9" },
+      noble: { label: "Vzácné plyny", color: "#a556c5" },
+      lanthanide: { label: "Lanthanoidy", color: "#c95d8f" },
+      actinide: { label: "Aktinoidy", color: "#8d6b4f" }
+    };
+
+    const elements = [
+      ["H","Vodík",1,1,1,"nonmetal","1,008","Nejlehčí prvek a nejběžnější chemická látka ve vesmíru."],
+      ["He","Helium",2,18,1,"noble","4,003","Lehký vzácný plyn používaný v kryogenice, balonech a detektorech."],
+      ["Li","Lithium",3,1,2,"alkali","6,94","Měkký alkalický kov důležitý pro akumulátory a slitiny."],
+      ["Be","Beryllium",4,2,2,"alkaline","9,012","Lehký, pevný kov používaný ve speciálních slitinách."],
+      ["B","Bor",5,13,2,"metalloid","10,81","Polokov využívaný v borosilikátovém skle a detergentech."],
+      ["C","Uhlík",6,14,2,"nonmetal","12,011","Základ organické chemie, vyskytuje se jako grafit, diamant i grafen."],
+      ["N","Dusík",7,15,2,"nonmetal","14,007","Tvoří většinu zemské atmosféry a je součástí bílkovin i DNA."],
+      ["O","Kyslík",8,16,2,"nonmetal","15,999","Reaktivní nekov nezbytný pro dýchání a hoření."],
+      ["F","Fluor",9,17,2,"halogen","18,998","Velmi reaktivní halogen používaný například ve fluorovaných sloučeninách."],
+      ["Ne","Neon",10,18,2,"noble","20,180","Vzácný plyn známý výrazným světlem v reklamních trubicích."],
+      ["Na","Sodík",11,1,3,"alkali","22,990","Reaktivní alkalický kov, v přírodě hlavně ve formě solí."],
+      ["Mg","Hořčík",12,2,3,"alkaline","24,305","Lehký kov a důležitý biogenní prvek."],
+      ["Al","Hliník",13,13,3,"metal","26,982","Lehký korozivzdorný kov široce používaný v konstrukcích a obalech."],
+      ["Si","Křemík",14,14,3,"metalloid","28,085","Klíčový materiál polovodičů, skla a silikátů."],
+      ["P","Fosfor",15,15,3,"nonmetal","30,974","Nekov důležitý pro DNA, ATP a hnojiva."],
+      ["S","Síra",16,16,3,"nonmetal","32,06","Žlutý nekov používaný při výrobě kyseliny sírové a vulkanizaci."],
+      ["Cl","Chlor",17,17,3,"halogen","35,45","Halogen používaný k dezinfekci vody a výrobě chloridů."],
+      ["Ar","Argon",18,18,3,"noble","39,948","Vzácný plyn používaný jako ochranná atmosféra při svařování."],
+      ["K","Draslík",19,1,4,"alkali","39,098","Reaktivní alkalický kov a důležitý minerál v organismech."],
+      ["Ca","Vápník",20,2,4,"alkaline","40,078","Kov alkalických zemin, zásadní pro kosti, zuby a vápenec."],
+      ["Sc","Skandium",21,3,4,"transition","44,956","Lehký přechodný kov používaný ve vysoce pevných slitinách."],
+      ["Ti","Titan",22,4,4,"transition","47,867","Pevný, lehký a korozivzdorný kov pro medicínu i letectví."],
+      ["V","Vanad",23,5,4,"transition","50,942","Přechodný kov zlepšující vlastnosti ocelí."],
+      ["Cr","Chrom",24,6,4,"transition","51,996","Tvrdý kov používaný v nerezové oceli a povrchových úpravách."],
+      ["Mn","Mangan",25,7,4,"transition","54,938","Důležitý legující prvek v ocelářství."],
+      ["Fe","Železo",26,8,4,"transition","55,845","Jeden z nejpoužívanějších kovů, základ oceli a litiny."],
+      ["Co","Kobalt",27,9,4,"transition","58,933","Kov používaný v magnetech, slitinách a akumulátorech."],
+      ["Ni","Nikl",28,10,4,"transition","58,693","Korozivzdorný kov pro slitiny, povlaky a baterie."],
+      ["Cu","Měď",29,11,4,"transition","63,546","Výborný vodič elektřiny a tepla s typickou načervenalou barvou."],
+      ["Zn","Zinek",30,12,4,"transition","65,38","Kov používaný k pozinkování oceli a ve slitinách."],
+      ["Ga","Gallium",31,13,4,"metal","69,723","Kov s nízkou teplotou tání, důležitý v polovodičích."],
+      ["Ge","Germanium",32,14,4,"metalloid","72,630","Polokov používaný v optice a polovodičích."],
+      ["As","Arsen",33,15,4,"metalloid","74,922","Toxický polokov známý z minerálů a speciálních sloučenin."],
+      ["Se","Selen",34,16,4,"nonmetal","78,971","Stopový biogenní prvek a materiál pro fotoelektrické aplikace."],
+      ["Br","Brom",35,17,4,"halogen","79,904","Kapalný halogen s výrazným zápachem a reaktivními sloučeninami."],
+      ["Kr","Krypton",36,18,4,"noble","83,798","Vzácný plyn používaný ve výbojkách a speciálních laserech."],
+      ["Rb","Rubidium",37,1,5,"alkali","85,468","Velmi reaktivní alkalický kov používaný v atomových hodinách."],
+      ["Sr","Stroncium",38,2,5,"alkaline","87,62","Kov alkalických zemin, jeho sloučeniny barví plamen červeně."],
+      ["Y","Yttrium",39,3,5,"transition","88,906","Přechodný kov používaný v keramice, fosforech a laserech."],
+      ["Zr","Zirkonium",40,4,5,"transition","91,224","Korozivzdorný kov používaný v jaderné technice."],
+      ["Nb","Niob",41,5,5,"transition","92,906","Kov pro pevné slitiny a supravodivé materiály."],
+      ["Mo","Molybden",42,6,5,"transition","95,95","Přechodný kov zvyšující pevnost a tepelnou odolnost ocelí."],
+      ["Tc","Technecium",43,7,5,"transition","[98]","Radioaktivní prvek využívaný v nukleární medicíně."],
+      ["Ru","Ruthenium",44,8,5,"transition","101,07","Platinový kov používaný v katalyzátorech a elektronice."],
+      ["Rh","Rhodium",45,9,5,"transition","102,91","Vzácný kov pro katalyzátory a odrazivé povrchy."],
+      ["Pd","Palladium",46,10,5,"transition","106,42","Platinový kov používaný v katalyzátorech a vodíkových technologiích."],
+      ["Ag","Stříbro",47,11,5,"transition","107,87","Kov s nejvyšší elektrickou vodivostí, používaný ve špercích i technice."],
+      ["Cd","Kadmium",48,12,5,"transition","112,41","Toxický kov dříve používaný v akumulátorech a pigmentech."],
+      ["In","Indium",49,13,5,"metal","114,82","Měkký kov používaný v dotykových displejích a polovodičích."],
+      ["Sn","Cín",50,14,5,"metal","118,71","Kov známý z pájek, pocínování a bronzu."],
+      ["Sb","Antimon",51,15,5,"metalloid","121,76","Polokov používaný ve slitinách a zpomalovačích hoření."],
+      ["Te","Tellur",52,16,5,"metalloid","127,60","Polokov pro termoelektrické materiály a slitiny."],
+      ["I","Jod",53,17,5,"halogen","126,90","Halogen důležitý pro štítnou žlázu a dezinfekční prostředky."],
+      ["Xe","Xenon",54,18,5,"noble","131,29","Vzácný plyn používaný ve výbojkách, laserech a medicíně."],
+      ["Cs","Cesium",55,1,6,"alkali","132,91","Velmi reaktivní alkalický kov využívaný v atomových hodinách."],
+      ["Ba","Baryum",56,2,6,"alkaline","137,33","Kov alkalických zemin, jeho sloučeniny se používají v radiologii."],
+      ["La","Lanthan",57,3,9,"lanthanide","138,91","První lanthanoid, součást materiálů pro optiku a katalyzátory."],
+      ["Ce","Cer",58,4,9,"lanthanide","140,12","Lanthanoid používaný v lešticích prášcích a katalyzátorech."],
+      ["Pr","Praseodym",59,5,9,"lanthanide","140,91","Lanthanoid pro magnety, skla a speciální slitiny."],
+      ["Nd","Neodym",60,6,9,"lanthanide","144,24","Důležitý prvek silných permanentních magnetů."],
+      ["Pm","Promethium",61,7,9,"lanthanide","[145]","Radioaktivní lanthanoid bez stabilních izotopů."],
+      ["Sm","Samarium",62,8,9,"lanthanide","150,36","Lanthanoid používaný v magnetech a absorbérech neutronů."],
+      ["Eu","Europium",63, 9,9,"lanthanide","151,96","Lanthanoid známý z luminoforů pro červené a modré světlo."],
+      ["Gd","Gadolinium",64,10,9,"lanthanide","157,25","Lanthanoid používaný v kontrastních látkách a magnetických materiálech."],
+      ["Tb","Terbium",65,11,9,"lanthanide","158,93","Lanthanoid pro zelené luminofory a magnetostrikční slitiny."],
+      ["Dy","Dysprosium",66,12,9,"lanthanide","162,50","Prvek zvyšující teplotní stabilitu silných magnetů."],
+      ["Ho","Holmium",67,13,9,"lanthanide","164,93","Lanthanoid s výraznými magnetickými vlastnostmi."],
+      ["Er","Erbium",68,14,9,"lanthanide","167,26","Lanthanoid používaný v optických vláknech a laserech."],
+      ["Tm","Thulium",69,15,9,"lanthanide","168,93","Vzácný lanthanoid pro speciální rentgenové zdroje a lasery."],
+      ["Yb","Ytterbium",70,16,9,"lanthanide","173,05","Lanthanoid využívaný v laserech, hodinách a materiálovém výzkumu."],
+      ["Lu","Lutecium",71,17,9,"lanthanide","174,97","Hustý lanthanoid používaný v detektorech a medicínské diagnostice."],
+      ["Hf","Hafnium",72,4,6,"transition","178,49","Přechodný kov pro vysokoteplotní slitiny a jadernou techniku."],
+      ["Ta","Tantal",73,5,6,"transition","180,95","Korozivzdorný kov používaný v kondenzátorech a chirurgii."],
+      ["W","Wolfram",74,6,6,"transition","183,84","Kov s velmi vysokou teplotou tání, používaný v tvrdokovech."],
+      ["Re","Rhenium",75,7,6,"transition","186,21","Vzácný kov pro vysokoteplotní letecké slitiny."],
+      ["Os","Osmium",76,8,6,"transition","190,23","Velmi hustý platinový kov s tvrdými sloučeninami."],
+      ["Ir","Iridium",77,9,6,"transition","192,22","Extrémně korozivzdorný a hustý platinový kov."],
+      ["Pt","Platina",78,10,6,"transition","195,08","Ušlechtilý kov pro katalyzátory, šperky a laboratorní vybavení."],
+      ["Au","Zlato",79,11,6,"transition","196,97","Ušlechtilý kov ceněný pro vodivost, kujnost a chemickou odolnost."],
+      ["Hg","Rtuť",80,12,6,"transition","200,59","Kapalný kov, toxický a historicky používaný v teploměrech."],
+      ["Tl","Thallium",81,13,6,"metal","204,38","Toxický měkký kov s využitím ve speciálních materiálech."],
+      ["Pb","Olovo",82,14,6,"metal","207,2","Hustý měkký kov používaný v akumulátorech a stínění záření."],
+      ["Bi","Bismut",83,15,6,"metal","208,98","Těžký kov s nízkou toxicitou a typickými duhovými krystaly."],
+      ["Po","Polonium",84,16,6,"metal","[209]","Radioaktivní prvek objevený Marií Curie-Skłodowskou."],
+      ["At","Astat",85,17,6,"halogen","[210]","Velmi vzácný radioaktivní halogen."],
+      ["Rn","Radon",86,18,6,"noble","[222]","Radioaktivní vzácný plyn vznikající rozpadem radia."],
+      ["Fr","Francium",87,1,7,"alkali","[223]","Extrémně vzácný radioaktivní alkalický kov."],
+      ["Ra","Radium",88,2,7,"alkaline","[226]","Radioaktivní kov alkalických zemin historicky známý luminiscencí solí."],
+      ["Ac","Aktinium",89,3,10,"actinide","[227]","Radioaktivní aktinoid, po němž je pojmenována celá řada aktinoidů."],
+      ["Th","Thorium",90,4,10,"actinide","232,04","Radioaktivní kov zvažovaný jako jaderné palivo."],
+      ["Pa","Protaktinium",91,5,10,"actinide","231,04","Vzácný radioaktivní aktinoid."],
+      ["U","Uran",92,6,10,"actinide","238,03","Radioaktivní kov používaný jako jaderné palivo."],
+      ["Np","Neptunium",93,7,10,"actinide","[237]","Transuranový radioaktivní prvek."],
+      ["Pu","Plutonium",94,8,10,"actinide","[244]","Radioaktivní kov používaný v jaderné energetice a výzkumu."],
+      ["Am","Americium",95, 9,10,"actinide","[243]","Aktinoid známý z ionizačních hlásičů kouře."],
+      ["Cm","Curium",96,10,10,"actinide","[247]","Radioaktivní aktinoid pojmenovaný po manželích Curieových."],
+      ["Bk","Berkelium",97,11,10,"actinide","[247]","Syntetický aktinoid připravovaný v jaderných reaktorech."],
+      ["Cf","Kalifornium",98,12,10,"actinide","[251]","Syntetický prvek používaný jako zdroj neutronů."],
+      ["Es","Einsteinium",99,13,10,"actinide","[252]","Syntetický aktinoid pojmenovaný po Albertu Einsteinovi."],
+      ["Fm","Fermium",100,14,10,"actinide","[257]","Syntetický radioaktivní prvek pojmenovaný po Enricu Fermim."],
+      ["Md","Mendelevium",101,15,10,"actinide","[258]","Syntetický aktinoid pojmenovaný po Dmitriji Mendělejevovi."],
+      ["No","Nobelium",102,16,10,"actinide","[259]","Syntetický prvek pojmenovaný po Alfredu Nobelovi."],
+      ["Lr","Lawrencium",103,17,10,"actinide","[266]","Radioaktivní aktinoid uzavírající aktinoidovou řadu."],
+      ["Rf","Rutherfordium",104,4,7,"transition","[267]","Syntetický přechodný kov pojmenovaný po Ernestu Rutherfordovi."],
+      ["Db","Dubnium",105,5,7,"transition","[268]","Syntetický radioaktivní prvek."],
+      ["Sg","Seaborgium",106,6,7,"transition","[269]","Syntetický prvek pojmenovaný po Glennu Seaborgovi."],
+      ["Bh","Bohrium",107,7,7,"transition","[270]","Syntetický radioaktivní přechodný kov."],
+      ["Hs","Hassium",108,8,7,"transition","[277]","Syntetický prvek pojmenovaný podle německého Hesenska."],
+      ["Mt","Meitnerium",109,9,7,"transition","[278]","Syntetický prvek pojmenovaný po Lise Meitnerové."],
+      ["Ds","Darmstadtium",110,10,7,"transition","[281]","Syntetický prvek pojmenovaný podle Darmstadtu."],
+      ["Rg","Roentgenium",111,11,7,"transition","[282]","Syntetický prvek pojmenovaný po Wilhelmu Röntgenovi."],
+      ["Cn","Kopernicium",112,12,7,"transition","[285]","Syntetický prvek pojmenovaný po Mikuláši Koperníkovi."],
+      ["Nh","Nihonium",113,13,7,"metal","[286]","Syntetický prvek, jehož název odkazuje na Japonsko."],
+      ["Fl","Flerovium",114,14,7,"metal","[289]","Syntetický těžký prvek pojmenovaný po Flerovově laboratoři."],
+      ["Mc","Moscovium",115,15,7,"metal","[290]","Syntetický prvek pojmenovaný podle moskevské oblasti."],
+      ["Lv","Livermorium",116,16,7,"metal","[293]","Syntetický prvek pojmenovaný podle Lawrence Livermore National Laboratory."],
+      ["Ts","Tennessin",117,17,7,"halogen","[294]","Syntetický halogen pojmenovaný podle Tennessee."],
+      ["Og","Oganesson",118,18,7,"noble","[294]","Syntetický vzácný plyn pojmenovaný po Juriji Oganesjanovi."]
+    ].map(([symbol, name, number, col, row, group, mass, note]) => ({ symbol, name, number, col, row, group, mass, note }));
+
+    const table = document.getElementById("periodicTable");
+    const legend = document.getElementById("legend");
+    const wikiTooltip = document.createElement("div");
+    wikiTooltip.className = "wiki-tooltip";
+    document.body.appendChild(wikiTooltip);
+    const wikiCache = new Map();
+    let tooltipHideTimer = 0;
+    let tooltipOpenedByFocus = false;
+
+    function hideTooltip() {
+      window.clearTimeout(tooltipHideTimer);
+      wikiTooltip.classList.remove("visible");
+      clearMediaZoom();
+    }
+
+    function scheduleHideTooltip() {
+      window.clearTimeout(tooltipHideTimer);
+      tooltipHideTimer = window.setTimeout(hideTooltip, 140);
+    }
+
+    function parseMassNumber(mass) {
+      const number = Number(String(mass).replace("[", "").replace("]", "").replace(",", "."));
+      return Number.isFinite(number) ? Math.round(number) : 0;
+    }
+
+    const wikiTitleOverrides = {
+      Ti: "Titan (prvek)",
+      O: "Kyslík",
+      Og: "Oganesson"
+    };
+
+    const imageFallbacks = {
+      O: "https://upload.wikimedia.org/wikipedia/commons/c/c3/Liquid_oxygen_in_a_beaker_4.jpg",
+      U: "https://upload.wikimedia.org/wikipedia/commons/c/c1/Uranium_238.jpg",
+      Pm: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Promethium-147_solution.jpg/500px-Promethium-147_solution.jpg",
+      Hf: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Hafnium_bits.jpg/1280px-Hafnium_bits.jpg",
+      Fm: "https://upload.wikimedia.org/wikipedia/commons/9/9e/Fermium-Ytterbium_Alloy.jpg",
+      Cm: "https://upload.wikimedia.org/wikipedia/en/6/69/Curium.jpg",
+      Pa: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Protactinium_%28Element_-_91%29_2.jpg/1280px-Protactinium_%28Element_-_91%29_2.jpg",
+      Ac: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Actinium_sample_%2831481701837%29.png/960px-Actinium_sample_%2831481701837%29.png",
+      Fr: "https://upload.wikimedia.org/wikipedia/en/c/cf/Francium_%28200%2C000_francium_atoms_in_a_magneto-optical_trap%29.jpg",
+      Rn: "https://upload.wikimedia.org/wikipedia/en/b/be/Radon86%281%29.jpg",
+      At: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Glow_from_a_sample_of_astatine_%28cropped%29.jpg/960px-Glow_from_a_sample_of_astatine_%28cropped%29.jpg",
+      Po: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Polonium_on_brass_sheet.jpg/1280px-Polonium_on_brass_sheet.jpg"
+    };
+
+    const physicalOverrides = {
+      H: { appearance: "bezbarvý plyn", density: "0,0000899 g/cm3", state: "plyn", hardness: "-", melt: "-259,16 °C", boil: "-252,87 °C" },
+      He: { appearance: "bezbarvý plyn", density: "0,0001785 g/cm3", state: "plyn", hardness: "-", melt: "-272,2 °C", boil: "-268,93 °C" },
+      Li: { appearance: "stříbřitě bílý měkký kov", density: "0,534 g/cm3", state: "pevná látka", hardness: "0,6 Mohs", melt: "180,5 °C", boil: "1342 °C" },
+      Be: { appearance: "ocelově šedý kov", density: "1,85 g/cm3", state: "pevná látka", hardness: "5,5 Mohs", melt: "1287 °C", boil: "2469 °C" },
+      B: { appearance: "černohnědý polokov", density: "2,34 g/cm3", state: "pevná látka", hardness: "9,3 Mohs", melt: "2076 °C", boil: "3927 °C" },
+      C: { appearance: "černý grafit / čirý diamant", density: "2,26 g/cm3 grafit", state: "pevná látka", hardness: "1-10 Mohs", melt: "sublimuje", boil: "4827 °C" },
+      N: { appearance: "bezbarvý plyn", density: "0,001251 g/cm3", state: "plyn", hardness: "-", melt: "-210,0 °C", boil: "-195,8 °C" },
+      O: { appearance: "bezbarvý plyn", density: "0,001429 g/cm3", state: "plyn", hardness: "-", melt: "-218,79 °C", boil: "-182,96 °C" },
+      F: { appearance: "světle žlutý plyn", density: "0,001696 g/cm3", state: "plyn", hardness: "-", melt: "-219,67 °C", boil: "-188,11 °C" },
+      Ne: { appearance: "bezbarvý plyn", density: "0,000900 g/cm3", state: "plyn", hardness: "-", melt: "-248,59 °C", boil: "-246,05 °C" },
+      Na: { appearance: "stříbřitý měkký kov", density: "0,97 g/cm3", state: "pevná látka", hardness: "0,5 Mohs", melt: "97,79 °C", boil: "882,9 °C" },
+      Mg: { appearance: "lesklý šedý kov", density: "1,74 g/cm3", state: "pevná látka", hardness: "2,5 Mohs", melt: "650 °C", boil: "1091 °C" },
+      Al: { appearance: "stříbřitě bílý kov", density: "2,70 g/cm3", state: "pevná látka", hardness: "2,75 Mohs", melt: "660,32 °C", boil: "2470 °C" },
+      Si: { appearance: "tmavě šedý lesklý polokov", density: "2,33 g/cm3", state: "pevná látka", hardness: "6,5 Mohs", melt: "1414 °C", boil: "3265 °C" },
+      P: { appearance: "bílý/červený/černý", density: "1,82 g/cm3 bílý", state: "pevná látka", hardness: "-", melt: "44,1 °C bílý", boil: "280,5 °C" },
+      S: { appearance: "žlutá křehká látka", density: "2,07 g/cm3", state: "pevná látka", hardness: "2 Mohs", melt: "115,2 °C", boil: "444,6 °C" },
+      Cl: { appearance: "žlutozelený plyn", density: "0,0032 g/cm3", state: "plyn", hardness: "-", melt: "-101,5 °C", boil: "-34,0 °C" },
+      Ar: { appearance: "bezbarvý plyn", density: "0,001784 g/cm3", state: "plyn", hardness: "-", melt: "-189,34 °C", boil: "-185,85 °C" },
+      K: { appearance: "stříbřitý měkký kov", density: "0,86 g/cm3", state: "pevná látka", hardness: "0,4 Mohs", melt: "63,38 °C", boil: "759 °C" },
+      Ca: { appearance: "stříbřitě šedý kov", density: "1,55 g/cm3", state: "pevná látka", hardness: "1,75 Mohs", melt: "842 °C", boil: "1484 °C" },
+      Sc: { appearance: "stříbřitě bílý kov", density: "2,99 g/cm3", state: "pevná látka", hardness: "-", melt: "1541 °C", boil: "2836 °C" },
+      Ti: { appearance: "stříbrošedý kov", density: "4,51 g/cm3", state: "pevná látka", hardness: "6 Mohs", melt: "1668 °C", boil: "3287 °C" },
+      V: { appearance: "modrošedý kov", density: "6,11 g/cm3", state: "pevná látka", hardness: "7 Mohs", melt: "1910 °C", boil: "3407 °C" },
+      Cr: { appearance: "stříbřitý lesklý kov", density: "7,19 g/cm3", state: "pevná látka", hardness: "8,5 Mohs", melt: "1907 °C", boil: "2671 °C" },
+      Mn: { appearance: "šedobílý křehký kov", density: "7,21 g/cm3", state: "pevná látka", hardness: "6 Mohs", melt: "1246 °C", boil: "2061 °C" },
+      Fe: { appearance: "stříbrošedý kov", density: "7,87 g/cm3", state: "pevná látka", hardness: "4 Mohs", melt: "1538 °C", boil: "2862 °C" },
+      Co: { appearance: "namodrale stříbrný kov", density: "8,90 g/cm3", state: "pevná látka", hardness: "5 Mohs", melt: "1495 °C", boil: "2927 °C" },
+      Ni: { appearance: "stříbřitě bílý kov", density: "8,91 g/cm3", state: "pevná látka", hardness: "4 Mohs", melt: "1455 °C", boil: "2913 °C" },
+      Cu: { appearance: "červenooranžový kov", density: "8,96 g/cm3", state: "pevná látka", hardness: "3 Mohs", melt: "1084,62 °C", boil: "2562 °C" },
+      Zn: { appearance: "modrobílý kov", density: "7,14 g/cm3", state: "pevná látka", hardness: "2,5 Mohs", melt: "419,53 °C", boil: "907 °C" },
+      Ga: { appearance: "stříbřitý měkký kov", density: "5,91 g/cm3", state: "pevná látka", hardness: "1,5 Mohs", melt: "29,76 °C", boil: "2204 °C" },
+      Ge: { appearance: "šedobílý polokov", density: "5,32 g/cm3", state: "pevná látka", hardness: "6 Mohs", melt: "938,25 °C", boil: "2833 °C" },
+      As: { appearance: "kovově šedý polokov", density: "5,73 g/cm3", state: "pevná látka", hardness: "3,5 Mohs", melt: "sublimuje", boil: "614 °C sublimace" },
+      Se: { appearance: "šedý/červený nekov", density: "4,81 g/cm3", state: "pevná látka", hardness: "2 Mohs", melt: "221 °C", boil: "685 °C" },
+      Br: { appearance: "červenohnědá kapalina", density: "3,11 g/cm3", state: "kapalina", hardness: "-", melt: "-7,2 °C", boil: "58,8 °C" },
+      Kr: { appearance: "bezbarvý plyn", density: "0,00375 g/cm3", state: "plyn", hardness: "-", melt: "-157,36 °C", boil: "-153,22 °C" },
+      Rb: { appearance: "stříbřitý měkký kov", density: "1,53 g/cm3", state: "pevná látka", hardness: "0,3 Mohs", melt: "39,31 °C", boil: "688 °C" },
+      Sr: { appearance: "stříbřitě žlutý kov", density: "2,64 g/cm3", state: "pevná látka", hardness: "1,5 Mohs", melt: "777 °C", boil: "1382 °C" },
+      Y: { appearance: "stříbřitý kov", density: "4,47 g/cm3", state: "pevná látka", hardness: "-", melt: "1526 °C", boil: "3336 °C" },
+      Zr: { appearance: "stříbřitě bílý kov", density: "6,52 g/cm3", state: "pevná látka", hardness: "5 Mohs", melt: "1855 °C", boil: "4409 °C" },
+      Nb: { appearance: "šedý lesklý kov", density: "8,57 g/cm3", state: "pevná látka", hardness: "6 Mohs", melt: "2477 °C", boil: "4744 °C" },
+      Mo: { appearance: "šedý kov", density: "10,28 g/cm3", state: "pevná látka", hardness: "5,5 Mohs", melt: "2623 °C", boil: "4639 °C" },
+      Tc: { appearance: "stříbrošedý radioaktivní kov", density: "11,5 g/cm3", state: "pevná látka", hardness: "-", melt: "2157 °C", boil: "4265 °C" },
+      Ru: { appearance: "stříbřitě bílý kov", density: "12,45 g/cm3", state: "pevná látka", hardness: "6,5 Mohs", melt: "2334 °C", boil: "4150 °C" },
+      Rh: { appearance: "stříbřitě bílý kov", density: "12,41 g/cm3", state: "pevná látka", hardness: "6 Mohs", melt: "1964 °C", boil: "3695 °C" },
+      Pd: { appearance: "stříbřitě bílý kov", density: "12,02 g/cm3", state: "pevná látka", hardness: "4,75 Mohs", melt: "1554,9 °C", boil: "2963 °C" },
+      Ag: { appearance: "lesklý bílý kov", density: "10,49 g/cm3", state: "pevná látka", hardness: "2,5 Mohs", melt: "961,78 °C", boil: "2162 °C" },
+      Cd: { appearance: "stříbřitě modrý kov", density: "8,65 g/cm3", state: "pevná látka", hardness: "2 Mohs", melt: "321,07 °C", boil: "767 °C" },
+      In: { appearance: "stříbřitý měkký kov", density: "7,31 g/cm3", state: "pevná látka", hardness: "1,2 Mohs", melt: "156,60 °C", boil: "2072 °C" },
+      Sn: { appearance: "stříbřitý kov", density: "7,31 g/cm3", state: "pevná látka", hardness: "1,5 Mohs", melt: "231,93 °C", boil: "2602 °C" },
+      Sb: { appearance: "stříbřitě šedý polokov", density: "6,69 g/cm3", state: "pevná látka", hardness: "3 Mohs", melt: "630,63 °C", boil: "1587 °C" },
+      Te: { appearance: "stříbřitý křehký polokov", density: "6,24 g/cm3", state: "pevná látka", hardness: "2,25 Mohs", melt: "449,51 °C", boil: "987,9 °C" },
+      I: { appearance: "fialovočerné krystaly", density: "4,93 g/cm3", state: "pevná látka", hardness: "-", melt: "113,7 °C", boil: "184,3 °C" },
+      Xe: { appearance: "bezbarvý plyn", density: "0,00589 g/cm3", state: "plyn", hardness: "-", melt: "-111,75 °C", boil: "-108,12 °C" },
+      Cs: { appearance: "zlatavý měkký kov", density: "1,93 g/cm3", state: "pevná látka", hardness: "0,2 Mohs", melt: "28,44 °C", boil: "671 °C" },
+      Ba: { appearance: "stříbřitý kov", density: "3,62 g/cm3", state: "pevná látka", hardness: "1,25 Mohs", melt: "727 °C", boil: "1897 °C" },
+      La: { appearance: "stříbřitě bílý kov", density: "6,15 g/cm3", state: "pevná látka", hardness: "2,5 Mohs", melt: "920 °C", boil: "3464 °C" },
+      Ce: { appearance: "stříbřitý kov", density: "6,77 g/cm3", state: "pevná látka", hardness: "2,5 Mohs", melt: "798 °C", boil: "3443 °C" },
+      Pr: { appearance: "stříbřitý kov", density: "6,77 g/cm3", state: "pevná látka", hardness: "-", melt: "931 °C", boil: "3520 °C" },
+      Nd: { appearance: "stříbřitý kov", density: "7,01 g/cm3", state: "pevná látka", hardness: "2 Mohs", melt: "1024 °C", boil: "3074 °C" },
+      Pm: { appearance: "radioaktivní kov", density: "7,26 g/cm3", state: "pevná látka", hardness: "-", melt: "1042 °C", boil: "3000 °C" },
+      Sm: { appearance: "stříbřitý kov", density: "7,52 g/cm3", state: "pevná látka", hardness: "-", melt: "1072 °C", boil: "1794 °C" },
+      Eu: { appearance: "stříbřitý kov", density: "5,24 g/cm3", state: "pevná látka", hardness: "-", melt: "822 °C", boil: "1529 °C" },
+      Gd: { appearance: "stříbřitě bílý kov", density: "7,90 g/cm3", state: "pevná látka", hardness: "-", melt: "1313 °C", boil: "3273 °C" },
+      Tb: { appearance: "stříbřitě bílý kov", density: "8,23 g/cm3", state: "pevná látka", hardness: "-", melt: "1356 °C", boil: "3230 °C" },
+      Dy: { appearance: "stříbřitý kov", density: "8,55 g/cm3", state: "pevná látka", hardness: "-", melt: "1412 °C", boil: "2567 °C" },
+      Ho: { appearance: "stříbřitý kov", density: "8,80 g/cm3", state: "pevná látka", hardness: "-", melt: "1474 °C", boil: "2700 °C" },
+      Er: { appearance: "stříbřitý kov", density: "9,07 g/cm3", state: "pevná látka", hardness: "-", melt: "1529 °C", boil: "2868 °C" },
+      Tm: { appearance: "stříbřitý kov", density: "9,32 g/cm3", state: "pevná látka", hardness: "-", melt: "1545 °C", boil: "1950 °C" },
+      Yb: { appearance: "stříbřitý kov", density: "6,90 g/cm3", state: "pevná látka", hardness: "-", melt: "824 °C", boil: "1196 °C" },
+      Lu: { appearance: "stříbřitě bílý kov", density: "9,84 g/cm3", state: "pevná látka", hardness: "-", melt: "1663 °C", boil: "3402 °C" },
+      Hf: { appearance: "šedý kov", density: "13,31 g/cm3", state: "pevná látka", hardness: "5,5 Mohs", melt: "2233 °C", boil: "4603 °C" },
+      Ta: { appearance: "šedý kov", density: "16,69 g/cm3", state: "pevná látka", hardness: "6,5 Mohs", melt: "3017 °C", boil: "5458 °C" },
+      W: { appearance: "šedobílý kov", density: "19,25 g/cm3", state: "pevná látka", hardness: "7,5 Mohs", melt: "3422 °C", boil: "5555 °C" },
+      Re: { appearance: "stříbřitě šedý kov", density: "21,02 g/cm3", state: "pevná látka", hardness: "7 Mohs", melt: "3186 °C", boil: "5596 °C" },
+      Os: { appearance: "modrobílý kov", density: "22,59 g/cm3", state: "pevná látka", hardness: "7 Mohs", melt: "3033 °C", boil: "5012 °C" },
+      Ir: { appearance: "stříbřitě bílý kov", density: "22,56 g/cm3", state: "pevná látka", hardness: "6,5 Mohs", melt: "2446 °C", boil: "4428 °C" },
+      Pt: { appearance: "stříbřitě bílý kov", density: "21,45 g/cm3", state: "pevná látka", hardness: "3,5 Mohs", melt: "1768,3 °C", boil: "3825 °C" },
+      Au: { appearance: "žlutý kov", density: "19,32 g/cm3", state: "pevná látka", hardness: "2,5 Mohs", melt: "1064,18 °C", boil: "2856 °C" },
+      Hg: { appearance: "stříbrná kapalina", density: "13,53 g/cm3", state: "kapalina", hardness: "-", melt: "-38,83 °C", boil: "356,73 °C" },
+      Tl: { appearance: "stříbřitě šedý kov", density: "11,85 g/cm3", state: "pevná látka", hardness: "1,2 Mohs", melt: "304 °C", boil: "1473 °C" },
+      Pb: { appearance: "modrošedý měkký kov", density: "11,34 g/cm3", state: "pevná látka", hardness: "1,5 Mohs", melt: "327,46 °C", boil: "1749 °C" },
+      Bi: { appearance: "stříbřitý křehký kov", density: "9,78 g/cm3", state: "pevná látka", hardness: "2,25 Mohs", melt: "271,4 °C", boil: "1564 °C" },
+      Po: { appearance: "stříbřitý radioaktivní kov", density: "9,20 g/cm3", state: "pevná látka", hardness: "-", melt: "254 °C", boil: "962 °C" },
+      At: { appearance: "tmavý radioaktivní halogen", density: "odhad 7 g/cm3", state: "pevná látka", hardness: "-", melt: "302 °C odhad", boil: "337 °C odhad" },
+      Rn: { appearance: "bezbarvý radioaktivní plyn", density: "0,00973 g/cm3", state: "plyn", hardness: "-", melt: "-71 °C", boil: "-61,7 °C" },
+      Fr: { appearance: "radioaktivní alkalický kov", density: "odhad 1,87 g/cm3", state: "pevná látka", hardness: "-", melt: "27 °C odhad", boil: "677 °C odhad" },
+      Ra: { appearance: "stříbřitě bílý radioaktivní kov", density: "5,5 g/cm3", state: "pevná látka", hardness: "-", melt: "700 °C", boil: "1737 °C" },
+      Ac: { appearance: "stříbřitý radioaktivní kov", density: "10,07 g/cm3", state: "pevná látka", hardness: "-", melt: "1050 °C", boil: "3200 °C" },
+      Th: { appearance: "stříbřitý radioaktivní kov", density: "11,72 g/cm3", state: "pevná látka", hardness: "3 Mohs", melt: "1750 °C", boil: "4788 °C" },
+      Pa: { appearance: "stříbřitý radioaktivní kov", density: "15,37 g/cm3", state: "pevná látka", hardness: "-", melt: "1568 °C", boil: "4027 °C" },
+      U: { appearance: "stříbrošedý radioaktivní kov", density: "19,05 g/cm3", state: "pevná látka", hardness: "6 Mohs", melt: "1132,2 °C", boil: "4131 °C" },
+      Np: { appearance: "stříbřitý radioaktivní kov", density: "20,45 g/cm3", state: "pevná látka", hardness: "-", melt: "639 °C", boil: "3902 °C" },
+      Pu: { appearance: "stříbřitý radioaktivní kov", density: "19,84 g/cm3", state: "pevná látka", hardness: "-", melt: "639,4 °C", boil: "3228 °C" },
+      Am: { appearance: "stříbřitý radioaktivní kov", density: "13,69 g/cm3", state: "pevná látka", hardness: "-", melt: "1176 °C", boil: "2607 °C" },
+      Cm: { appearance: "stříbřitý radioaktivní kov", density: "13,51 g/cm3", state: "pevná látka", hardness: "-", melt: "1340 °C", boil: "3110 °C" },
+      Bk: { appearance: "radioaktivní kov", density: "14,78 g/cm3", state: "pevná látka", hardness: "-", melt: "986 °C", boil: "2627 °C" },
+      Cf: { appearance: "radioaktivní kov", density: "15,1 g/cm3", state: "pevná látka", hardness: "-", melt: "900 °C", boil: "1470 °C" },
+      Es: { appearance: "radioaktivní kov", density: "8,84 g/cm3", state: "pevná látka", hardness: "-", melt: "860 °C", boil: "-" },
+      Fm: { appearance: "syntetický radioaktivní prvek", density: "-", state: "pevná látka", hardness: "-", melt: "1527 °C", boil: "-" },
+      Md: { appearance: "syntetický radioaktivní prvek", density: "-", state: "pevná látka", hardness: "-", melt: "827 °C odhad", boil: "-" },
+      No: { appearance: "syntetický radioaktivní prvek", density: "-", state: "pevná látka", hardness: "-", melt: "827 °C odhad", boil: "-" },
+      Lr: { appearance: "syntetický radioaktivní prvek", density: "-", state: "pevná látka", hardness: "-", melt: "1627 °C odhad", boil: "-" },
+      Og: { appearance: "syntetický radioaktivní prvek", density: "-", state: "odhad: pevná látka", hardness: "-", melt: "-", boil: "-" }
+    };
+
+    const gasSymbols = new Set(["H", "He", "N", "O", "F", "Ne", "Cl", "Ar", "Kr", "Xe", "Rn"]);
+    const liquidSymbols = new Set(["Br", "Hg"]);
+
+
+
+    const safetyWikiData = {
+      H: {
+            "rCodes": [
+                  "R12"
+            ],
+            "sCodes": [
+                  "S2",
+                  "S9",
+                  "S16",
+                  "S33"
+            ],
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      He: {
+            "sCodes": [
+                  "S9",
+                  "S23"
+            ],
+            "ghs": [
+                  "GHS04"
+            ]
+      },
+      Li: {
+            "rCodes": [
+                  "R14/15",
+                  "R34"
+            ],
+            "sCodes": [
+                  "S1/2",
+                  "S8",
+                  "S43",
+                  "S45"
+            ],
+            "ghs": [
+                  "GHS02",
+                  "GHS05"
+            ]
+      },
+      Be: {
+            "ghs": [
+                  "GHS06",
+                  "GHS07",
+                  "GHS08"
+            ],
+            "rCodes": [
+                  "R49",
+                  "R25",
+                  "R26",
+                  "R48/23",
+                  "R36/37/38",
+                  "R43"
+            ],
+            "sCodes": [
+                  "S53",
+                  "S45"
+            ]
+      },
+      C: {
+            "ghs": [
+                  "GHS07",
+                  "GHS08"
+            ]
+      },
+      N: {
+            "ghs": [
+                  "GHS04"
+            ]
+      },
+      O: {
+            "rCodes": [
+                  "R8"
+            ],
+            "sCodes": [
+                  "S2",
+                  "S17"
+            ],
+            "ghs": [
+                  "GHS03",
+                  "GHS04"
+            ]
+      },
+      F: {
+            "rCodes": [
+                  "R8",
+                  "R26",
+                  "R35"
+            ],
+            "sCodes": [
+                  "S9",
+                  "S26",
+                  "S28",
+                  "S36/37/39",
+                  "S45"
+            ],
+            "ghs": [
+                  "GHS03",
+                  "GHS05",
+                  "GHS06"
+            ]
+      },
+      Ne: {
+            "ghs": [
+                  "GHS04"
+            ]
+      },
+      Na: {
+            "rCodes": [
+                  "R14/15",
+                  "R34"
+            ],
+            "sCodes": [
+                  "S1/2",
+                  "S5",
+                  "S8",
+                  "S43",
+                  "S45"
+            ],
+            "ghs": [
+                  "GHS02",
+                  "GHS05"
+            ]
+      },
+      Mg: {
+            "rCodes": [
+                  "R11",
+                  "R15",
+                  "R17"
+            ],
+            "sCodes": [
+                  "S2",
+                  "S7/8",
+                  "S43"
+            ],
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Al: {
+            "rCodes": [
+                  "R10",
+                  "R15",
+                  "R17"
+            ],
+            "sCodes": [
+                  "S2",
+                  "S7/8",
+                  "S43"
+            ],
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Si: {
+            "rCodes": [
+                  "R36/38",
+                  "R11",
+                  "R36/37/38"
+            ],
+            "sCodes": [
+                  "S26",
+                  "S36/37/39",
+                  "S22"
+            ]
+      },
+      P: {
+            "rCodes": [
+                  "R11",
+                  "R16",
+                  "R52/53",
+                  "R17",
+                  "R26/28",
+                  "R35",
+                  "R50"
+            ],
+            "sCodes": [
+                  "S2",
+                  "S7",
+                  "S43",
+                  "S61",
+                  "S1/2",
+                  "S5",
+                  "S26",
+                  "S38",
+                  "S45"
+            ],
+            "ghs": [
+                  "GHS02",
+                  "GHS05",
+                  "GHS06",
+                  "GHS09"
+            ]
+      },
+      S: {
+            "rCodes": [
+                  "R38"
+            ],
+            "sCodes": [
+                  "S2",
+                  "S46"
+            ],
+            "ghs": [
+                  "GHS07"
+            ]
+      },
+      Cl: {
+            "rCodes": [
+                  "R23",
+                  "R36/37/38",
+                  "R50"
+            ],
+            "sCodes": [
+                  "S1/2",
+                  "S9",
+                  "S45",
+                  "S61"
+            ],
+            "ghs": [
+                  "GHS03",
+                  "GHS06",
+                  "GHS07",
+                  "GHS09"
+            ]
+      },
+      Ar: {
+            "ghs": [
+                  "GHS04"
+            ]
+      },
+      K: {
+            "rCodes": [
+                  "R14/15",
+                  "R34"
+            ],
+            "sCodes": [
+                  "S1/2",
+                  "S8",
+                  "S45"
+            ],
+            "ghs": [
+                  "GHS02",
+                  "GHS05"
+            ]
+      },
+      Ca: {
+            "rCodes": [
+                  "R15"
+            ],
+            "sCodes": [
+                  "S2",
+                  "S8",
+                  "S24/25",
+                  "S43"
+            ],
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Sc: {
+            "rCodes": [
+                  "R11"
+            ],
+            "sCodes": [
+                  "S16",
+                  "S43"
+            ],
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Ti: {
+            "rCodes": [
+                  "R17",
+                  "R36/37/38"
+            ],
+            "sCodes": [
+                  "S26"
+            ],
+            "ghs": [
+                  "GHS02",
+                  "GHS07"
+            ]
+      },
+      V: {
+            "rCodes": [
+                  "R17",
+                  "R36/37/38"
+            ],
+            "sCodes": [
+                  "S7",
+                  "S26",
+                  "S33",
+                  "S37",
+                  "S43",
+                  "S60"
+            ]
+      },
+      Cr: {
+            "rCodes": [
+                  "R11",
+                  "R40"
+            ],
+            "sCodes": [
+                  "S7",
+                  "S33",
+                  "S36/37",
+                  "S60"
+            ],
+            "ghs": [
+                  "GHS07",
+                  "GHS08",
+                  "GHS09"
+            ]
+      },
+      Mn: {
+            "rCodes": [
+                  "R11"
+            ],
+            "sCodes": [
+                  "S7",
+                  "S33",
+                  "S43",
+                  "S60"
+            ],
+            "ghs": [
+                  "GHS02",
+                  "GHS07",
+                  "GHS09"
+            ]
+      },
+      Fe: {
+            "rCodes": [
+                  "R11"
+            ],
+            "sCodes": [
+                  "S53",
+                  "S45",
+                  "S60",
+                  "S61"
+            ],
+            "ghs": [
+                  "GHS02",
+                  "GHS07"
+            ]
+      },
+      Co: {
+            "rCodes": [
+                  "R42/43",
+                  "R53"
+            ],
+            "sCodes": [
+                  "S2",
+                  "S22",
+                  "S24",
+                  "S37",
+                  "S61"
+            ],
+            "ghs": [
+                  "GHS07",
+                  "GHS08"
+            ]
+      },
+      Ni: {
+            "rCodes": [
+                  "R40",
+                  "R43",
+                  "R48/23",
+                  "R52/53"
+            ],
+            "sCodes": [
+                  "S2",
+                  "S36/37/39",
+                  "S45",
+                  "S61"
+            ],
+            "ghs": [
+                  "GHS07",
+                  "GHS08"
+            ]
+      },
+      Cu: {
+            "ghs": [
+                  "GHS02",
+                  "GHS09"
+            ]
+      },
+      Zn: {
+            "rCodes": [
+                  "R15",
+                  "R17",
+                  "R50/53"
+            ],
+            "sCodes": [
+                  "S2",
+                  "S43",
+                  "S46",
+                  "S60",
+                  "S61"
+            ],
+            "ghs": [
+                  "GHS02",
+                  "GHS09"
+            ]
+      },
+      Ga: {
+            "rCodes": [
+                  "R34"
+            ],
+            "sCodes": [
+                  "S26",
+                  "S36/37/39",
+                  "S45"
+            ],
+            "ghs": [
+                  "GHS05"
+            ]
+      },
+      Ge: {
+            "rCodes": [
+                  "R11"
+            ],
+            "sCodes": [
+                  "S9",
+                  "S16",
+                  "S29",
+                  "S33"
+            ],
+            "ghs": [
+                  "GHS02",
+                  "GHS08",
+                  "GHS09"
+            ]
+      },
+      As: {
+            "rCodes": [
+                  "R23/25",
+                  "R50/53"
+            ],
+            "sCodes": [
+                  "S1/2",
+                  "S20/21",
+                  "S28",
+                  "S45",
+                  "S60",
+                  "S61"
+            ],
+            "ghs": [
+                  "GHS06",
+                  "GHS09"
+            ]
+      },
+      Se: {
+            "rCodes": [
+                  "R23/25",
+                  "R33",
+                  "R53"
+            ],
+            "sCodes": [
+                  "S1/2",
+                  "S20/21",
+                  "S28",
+                  "S45",
+                  "S61"
+            ],
+            "ghs": [
+                  "GHS06",
+                  "GHS08"
+            ]
+      },
+      Br: {
+            "rCodes": [
+                  "R26",
+                  "R35",
+                  "R50"
+            ],
+            "sCodes": [
+                  "S1/2",
+                  "S7/9",
+                  "S26",
+                  "S45",
+                  "S61"
+            ],
+            "ghs": [
+                  "GHS05",
+                  "GHS06",
+                  "GHS09"
+            ]
+      },
+      Kr: {
+            "ghs": [
+                  "GHS04"
+            ]
+      },
+      Rb: {
+            "rCodes": [
+                  "R14/15",
+                  "R34"
+            ],
+            "sCodes": [
+                  "S7/8",
+                  "S20",
+                  "S26",
+                  "S30",
+                  "S33",
+                  "S36/37/39",
+                  "S43",
+                  "S45"
+            ],
+            "ghs": [
+                  "GHS02",
+                  "GHS05"
+            ]
+      },
+      Sr: {
+            "rCodes": [
+                  "R15"
+            ],
+            "sCodes": [
+                  "S8",
+                  "S24/25",
+                  "S43"
+            ],
+            "ghs": [
+                  "GHS02",
+                  "GHS05",
+                  "GHS07"
+            ]
+      },
+      Y: {
+            "rCodes": [
+                  "R11"
+            ],
+            "sCodes": [
+                  "S7/9",
+                  "S16",
+                  "S33"
+            ],
+            "ghs": [
+                  "GHS02",
+                  "GHS07"
+            ]
+      },
+      Zr: {
+            "rCodes": [
+                  "R15",
+                  "R17"
+            ],
+            "sCodes": [
+                  "S2",
+                  "S7/8",
+                  "S43"
+            ],
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Nb: {
+            "rCodes": [
+                  "R11"
+            ],
+            "sCodes": [
+                  "S43"
+            ],
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Mo: {
+            "ghs": [
+                  "GHS02",
+                  "GHS08"
+            ]
+      },
+      Tc: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Ru: {
+            "rCodes": [
+                  "R11"
+            ],
+            "sCodes": [
+                  "S16",
+                  "S22",
+                  "S24/25"
+            ],
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Rh: {
+            "rCodes": [
+                  "R11"
+            ],
+            "sCodes": [
+                  "S16",
+                  "S22",
+                  "S24/25"
+            ],
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Pd: {
+            "rCodes": [
+                  "R11",
+                  "R36/37/38"
+            ],
+            "sCodes": [
+                  "S7/9",
+                  "S16",
+                  "S26",
+                  "S36"
+            ],
+            "ghs": [
+                  "GHS02",
+                  "GHS07"
+            ]
+      },
+      Ag: {
+            "ghs": [
+                  "GHS09"
+            ]
+      },
+      Cd: {
+            "rCodes": [
+                  "R23",
+                  "R25",
+                  "R33",
+                  "R45",
+                  "R50/53"
+            ],
+            "sCodes": [
+                  "S1/2",
+                  "S22",
+                  "S35",
+                  "S45",
+                  "S46",
+                  "S61"
+            ],
+            "ghs": [
+                  "GHS02",
+                  "GHS06",
+                  "GHS08",
+                  "GHS09"
+            ]
+      },
+      In: {
+            "ghs": [
+                  "GHS02",
+                  "GHS07",
+                  "GHS08"
+            ]
+      },
+      Sn: {
+            "ghs": [
+                  "GHS07"
+            ]
+      },
+      Sb: {
+            "ghs": [
+                  "GHS07",
+                  "GHS08",
+                  "GHS09"
+            ]
+      },
+      Te: {
+            "ghs": [
+                  "GHS06",
+                  "GHS07",
+                  "GHS08"
+            ]
+      },
+      I: {
+            "ghs": [
+                  "GHS07",
+                  "GHS09"
+            ]
+      },
+      Xe: {
+            "ghs": [
+                  "GHS04"
+            ]
+      },
+      Cs: {
+            "ghs": [
+                  "GHS02",
+                  "GHS05"
+            ]
+      },
+      Ba: {
+            "ghs": [
+                  "GHS02",
+                  "GHS05",
+                  "GHS07"
+            ]
+      },
+      La: {
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Ce: {
+            "ghs": [
+                  "GHS02",
+                  "GHS07"
+            ]
+      },
+      Pr: {
+            "ghs": [
+                  "GHS02",
+                  "GHS07"
+            ]
+      },
+      Nd: {
+            "ghs": [
+                  "GHS02",
+                  "GHS07"
+            ]
+      },
+      Pm: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Sm: {
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Eu: {
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Gd: {
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Tb: {
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Dy: {
+            "ghs": [
+                  "GHS02",
+                  "GHS07"
+            ]
+      },
+      Ho: {
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Er: {
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Tm: {
+            "ghs": [
+                  "GHS02",
+                  "GHS07"
+            ]
+      },
+      Yb: {
+            "ghs": [
+                  "GHS02",
+                  "GHS07"
+            ]
+      },
+      Lu: {
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Hf: {
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Ta: {
+            "ghs": [
+                  "GHS02",
+                  "GHS07"
+            ]
+      },
+      W: {
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Re: {
+            "ghs": [
+                  "GHS02"
+            ]
+      },
+      Os: {
+            "ghs": [
+                  "GHS02",
+                  "GHS05",
+                  "GHS07"
+            ]
+      },
+      Ir: {
+            "ghs": [
+                  "GHS02",
+                  "GHS07"
+            ]
+      },
+      Pt: {
+            "ghs": [
+                  "GHS02",
+                  "GHS03",
+                  "GHS07"
+            ]
+      },
+      Hg: {
+            "rCodes": [
+                  "R61",
+                  "R26",
+                  "R48/23",
+                  "R50/53"
+            ],
+            "sCodes": [
+                  "S53",
+                  "S45",
+                  "S60",
+                  "S61"
+            ],
+            "ghs": [
+                  "GHS06",
+                  "GHS08",
+                  "GHS09"
+            ]
+      },
+      Tl: {
+            "rCodes": [
+                  "R26",
+                  "R28",
+                  "R45",
+                  "R50/53"
+            ],
+            "sCodes": [
+                  "S1/2",
+                  "S22",
+                  "S35",
+                  "S45",
+                  "S46",
+                  "S61"
+            ],
+            "ghs": [
+                  "GHS06",
+                  "GHS08"
+            ]
+      },
+      Pb: {
+            "rCodes": [
+                  "R25",
+                  "R45",
+                  "R58",
+                  "R61"
+            ],
+            "sCodes": [
+                  "S1/2",
+                  "S45",
+                  "S46",
+                  "S61"
+            ],
+            "ghs": [
+                  "GHS08"
+            ]
+      },
+      Bi: {
+            "ghs": [
+                  "RAD",
+                  "GHS02"
+            ]
+      },
+      Po: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      At: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Rn: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Fr: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Ra: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Ac: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Th: {
+            "ghs": [
+                  "RAD",
+                  "GHS03",
+                  "GHS07",
+                  "GHS08"
+            ]
+      },
+      Pa: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      U: {
+            "ghs": [
+                  "RAD",
+                  "GHS06",
+                  "GHS08"
+            ],
+            "rCodes": [
+                  "R26/28",
+                  "R33",
+                  "R53"
+            ],
+            "sCodes": [
+                  "S1/2",
+                  "S20/21",
+                  "S45",
+                  "S61"
+            ]
+      },
+      Np: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Pu: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Am: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Cm: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Bk: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Cf: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Es: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Fm: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Md: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      No: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Lr: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Rf: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Db: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Sg: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Bh: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Hs: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Mt: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Ds: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Rg: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Cn: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Nh: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Fl: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Mc: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Lv: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Ts: {
+            "ghs": [
+                  "RAD"
+            ]
+      },
+      Og: {
+            "ghs": [
+                  "RAD"
+            ]
+      }
+};
+
+    function wikiPageTitle(element) {
+      return wikiTitleOverrides[element.symbol] || element.name;
+    }
+
+    function physicalFacts(element, group) {
+      if (physicalOverrides[element.symbol]) return physicalOverrides[element.symbol];
+      const metallic = ["alkali", "alkaline", "transition", "metal", "lanthanide", "actinide"].includes(element.group);
+      const state = liquidSymbols.has(element.symbol) ? "kapalina" : gasSymbols.has(element.symbol) ? "plyn" : "pevná látka";
+      return {
+        appearance: metallic ? "stříbřitý/šedý kov" : group.label.toLocaleLowerCase("cs-CZ"),
+        density: "-",
+        state,
+        hardness: "-",
+        melt: "-",
+        boil: "-"
+      };
+    }
+
+    function safetyInfo(element) {
+      const rMeanings = {
+        R8: "Dotek s hořlavým materiálem může způsobit požár.",
+        R10: "Hořlavý.",
+        R11: "Vysoce hořlavý.",
+        R12: "Extrémně hořlavý.",
+        R14: "Prudce reaguje s vodou.",
+        R15: "Při styku s vodou uvolňuje extrémně hořlavé plyny.",
+        R16: "Výbušný při smíchání s oxidačními látkami.",
+        R17: "Samovolně se vzněcuje na vzduchu.",
+        R23: "Toxický při vdechování.",
+        R25: "Toxický při požití.",
+        R26: "Vysoce toxický při vdechování.",
+        R28: "Vysoce toxický při požití.",
+        R33: "Nebezpečí kumulativních účinků.",
+        R34: "Způsobuje poleptání.",
+        R35: "Způsobuje těžké poleptání.",
+        R36: "Dráždí oči.",
+        R37: "Dráždí dýchací orgány.",
+        R38: "Dráždí kůži.",
+        R40: "Podezření na karcinogenní účinky.",
+        R42: "Může vyvolat senzibilizaci při vdechování.",
+        R43: "Může vyvolat senzibilizaci při styku s kůží.",
+        R45: "Může vyvolat rakovinu.",
+        R48: "Nebezpečí vážného poškození zdraví při dlouhodobé expozici.",
+        R49: "Může vyvolat rakovinu při vdechování.",
+        R50: "Vysoce toxický pro vodní organismy.",
+        R52: "Škodlivý pro vodní organismy.",
+        R53: "Může vyvolat dlouhodobé nepříznivé účinky ve vodním prostředí.",
+        R58: "Může vyvolat dlouhodobé nepříznivé účinky v životním prostředí.",
+        R61: "Může poškodit plod v těle matky."
+      };
+      const sMeanings = {
+        S1: "Uchovávejte uzamčené.",
+        S2: "Uchovávejte mimo dosah dětí.",
+        S5: "Uchovávejte pod vhodnou kapalinou uvedenou výrobcem.",
+        S7: "Uchovávejte obal těsně uzavřený.",
+        S8: "Uchovávejte obal suchý.",
+        S9: "Uchovávejte obal na dobře větraném místě.",
+        S16: "Uchovávejte mimo dosah zdrojů zapálení - zákaz kouření.",
+        S17: "Uchovávejte mimo dosah hořlavých materiálů.",
+        S20: "Nejezte a nepijte při používání.",
+        S21: "Nekuřte při používání.",
+        S22: "Nevdechujte prach.",
+        S23: "Nevdechujte plyny, dýmy, páry ani aerosoly.",
+        S24: "Zamezte styku s kůží.",
+        S25: "Zamezte styku s očima.",
+        S26: "Při zasažení očí ihned vypláchněte vodou a vyhledejte lékařskou pomoc.",
+        S28: "Při styku s kůží okamžitě omyjte velkým množstvím vody.",
+        S29: "Nevylévejte do kanalizace.",
+        S30: "K tomuto výrobku nikdy nepřidávejte vodu.",
+        S33: "Proveďte preventivní opatření proti výbojům statické elektřiny.",
+        S35: "Tento materiál a jeho obal musí být zneškodněny bezpečným způsobem.",
+        S36: "Používejte vhodný ochranný oděv.",
+        S37: "Používejte vhodné ochranné rukavice.",
+        S38: "Při nedostatečném větrání používejte vhodný dýchací přístroj.",
+        S39: "Používejte ochranné brýle nebo obličejový štít.",
+        S43: "V případě požáru použijte vhodný hasicí prostředek.",
+        S45: "V případě nehody nebo nevolnosti okamžitě vyhledejte lékařskou pomoc.",
+        S46: "Při požití okamžitě vyhledejte lékařskou pomoc a ukažte obal nebo etiketu.",
+        S53: "Zamezte expozici - před použitím si obstarejte speciální instrukce.",
+        S60: "Tento materiál a jeho obal musí být zneškodněny jako nebezpečný odpad.",
+        S61: "Zabraňte uvolnění do životního prostředí."
+      };
+      const info = safetyWikiData[element.symbol];
+      return info ? { ...info, rMeanings, sMeanings } : null;
+    }
+
+    function safetyMarkup(element) {
+      const info = safetyInfo(element);
+      if (!info) return "";
+
+      const codeItems = (code, meanings) => {
+        const prefix = code[0];
+        const numbers = code.slice(1).split("/");
+        const items = numbers.map((number) => {
+          const itemCode = `${prefix}${number}`;
+          return `<li>${itemCode}: ${meanings[itemCode]}</li>`;
+        }).join("");
+        return `<ul>${items}</ul>`;
+      };
+      const chip = (code, meanings) => `<span class="rs-chip">${code}<span class="rs-detail">${codeItems(code, meanings)}</span></span>`;
+      const rChips = info.rCodes?.length ? info.rCodes.map((code) => chip(code, info.rMeanings)).join("") : "";
+      const sChips = info.sCodes?.length ? info.sCodes.map((code) => chip(code, info.sMeanings)).join("") : "";
+      const ghsIcons = {
+        GHS02: { label: "Hořlavé", img: "https://pubchem.ncbi.nlm.nih.gov/images/ghs/GHS02.svg" },
+        GHS03: { label: "Oxidující", img: "https://pubchem.ncbi.nlm.nih.gov/images/ghs/GHS03.svg" },
+        GHS04: { label: "Plyn pod tlakem", img: "https://pubchem.ncbi.nlm.nih.gov/images/ghs/GHS04.svg" },
+        GHS05: { label: "Žíravé", img: "https://pubchem.ncbi.nlm.nih.gov/images/ghs/GHS05.svg" },
+        GHS06: { label: "Toxické", img: "https://pubchem.ncbi.nlm.nih.gov/images/ghs/GHS06.svg" },
+        GHS07: { label: "Dráždivé / škodlivé", img: "https://pubchem.ncbi.nlm.nih.gov/images/ghs/GHS07.svg" },
+        GHS08: { label: "Vážné zdravotní riziko", img: "https://pubchem.ncbi.nlm.nih.gov/images/ghs/GHS08.svg" },
+        GHS09: { label: "Nebezpečné pro životní prostředí", img: "https://pubchem.ncbi.nlm.nih.gov/images/ghs/GHS09.svg" },
+        RAD: { label: "Radioaktivní", className: "radioactive", img: "https://upload.wikimedia.org/wikipedia/commons/b/b5/Radioactive.svg" }
+      };
+      const mark = (item) => {
+        const data = ghsIcons[item];
+        if (!data) return "";
+        return `<span class="ghs-mark ${data.className || ""}" title="${data.label}"><img src="${data.img}" alt="${data.label}" loading="lazy"></span>`;
+      };
+      const ghs = info.ghs?.length ? info.ghs.map(mark).join("") : "";
+      const iconPreview = ghs ? `<span class="safety-icons">${ghs}</span>` : "";
+      const rRow = rChips ? `<span class="safety-row"><b>R věty:</b><span class="rs-list">${rChips}</span></span>` : "";
+      const sRow = sChips ? `<span class="safety-row"><b>S věty:</b><span class="rs-list">${sChips}</span></span>` : "";
+      const ghsRow = ghs ? `<span class="ghs-list">${ghs}</span>` : "";
+
+      return `
+        <span class="safety">${iconPreview}<span class="safety-label">Bezpečnost</span>
+          <span class="safety-card">
+            <strong>Bezpečnost podle Wikipedie</strong>
+            ${rRow}
+            ${sRow}
+            ${ghsRow}
+          </span>
+        </span>
+      `;
+    }
+
+    function electronShells(atomicNumber, symbol) {
+      const orbitals = [
+        [1, 2], [2, 2], [2, 6], [3, 2], [3, 6], [4, 2], [3, 10],
+        [4, 6], [5, 2], [4, 10], [5, 6], [6, 2], [4, 14], [5, 10],
+        [6, 6], [7, 2], [5, 14], [6, 10], [7, 6]
+      ];
+      const exceptions = {
+        Cr: [2, 8, 13, 1],
+        Cu: [2, 8, 18, 1],
+        Nb: [2, 8, 18, 12, 1],
+        Mo: [2, 8, 18, 13, 1],
+        Ru: [2, 8, 18, 15, 1],
+        Rh: [2, 8, 18, 16, 1],
+        Pd: [2, 8, 18, 18],
+        Ag: [2, 8, 18, 18, 1],
+        Pt: [2, 8, 18, 32, 17, 1],
+        Au: [2, 8, 18, 32, 18, 1]
+      };
+
+      if (exceptions[symbol]) return exceptions[symbol];
+
+      const shells = Array(7).fill(0);
+      let remaining = atomicNumber;
+      for (const [shell, capacity] of orbitals) {
+        if (remaining <= 0) break;
+        const used = Math.min(capacity, remaining);
+        shells[shell - 1] += used;
+        remaining -= used;
+      }
+      return shells.filter(Boolean);
+    }
+
+    function atomDiagram(element) {
+      const shells = electronShells(element.number, element.symbol);
+      const massNumber = parseMassNumber(element.mass);
+      const neutrons = Math.max(0, massNumber - element.number);
+      const maxRadius = 43;
+      const step = shells.length > 1 ? (maxRadius - 16) / (shells.length - 1) : 0;
+      const shellHtml = shells.map((count, shellIndex) => {
+        const radius = shells.length === 1 ? 31 : 16 + shellIndex * step;
+        const electronRadius = radius;
+        const shellSize = radius * 2;
+        const electrons = Array.from({ length: count }, (_, electronIndex) => {
+          const angle = (360 / count) * electronIndex - 90 + shellIndex * 11;
+          return `<span class="atom-electron" style="--angle:${angle}deg; --radius:${electronRadius}px"></span>`;
+        }).join("");
+        return `<span class="atom-shell" style="width:${shellSize}px; height:${shellSize}px">${electrons}</span>`;
+      }).join("");
+
+      return `
+        ${shellHtml}
+        <span class="nucleus">${element.symbol}<small>${element.number}p ${neutrons}n</small></span>
+      `;
+    }
+
+    function nucleusScale(zoom) {
+      return ((1 + (zoom - 1) * 0.5) / zoom).toFixed(3);
+    }
+
+    function clearMediaZoom() {
+      wikiTooltip.querySelectorAll(".zoomed").forEach((item) => {
+        if (item.dataset.zoomLocked) return;
+        item.classList.remove("zoomed");
+        item.style.removeProperty("--zoom");
+        item.style.removeProperty("--electron-scale");
+        item.style.removeProperty("--nucleus-scale");
+      });
+    }
+
+    function updateMediaZoom(event) {
+      if (event.target.closest(".wiki-link")) {
+        clearMediaZoom();
+        return;
+      }
+
+      const targets = [...wikiTooltip.querySelectorAll(".element-image, .atom-diagram")];
+      let closest = null;
+      let closestDistance = Infinity;
+
+      targets.forEach((target) => {
+        if (target.dataset.zoomLocked) return;
+        const rect = target.getBoundingClientRect();
+        const expansion = rect.width * .42;
+        const inside =
+          event.clientX >= rect.left - expansion &&
+          event.clientX <= rect.right + expansion &&
+          event.clientY >= rect.top - expansion &&
+          event.clientY <= rect.bottom + expansion;
+
+        if (!inside) return;
+
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const distance = Math.hypot(event.clientX - centerX, event.clientY - centerY);
+        if (distance < closestDistance) {
+          closest = target;
+          closestDistance = distance;
+        }
+      });
+
+      if (!closest) {
+        clearMediaZoom();
+        return;
+      }
+
+      targets.forEach((target) => {
+        if (target.dataset.zoomLocked) return;
+        if (target === closest) return;
+        target.classList.remove("zoomed");
+        target.style.removeProperty("--zoom");
+        target.style.removeProperty("--electron-scale");
+        target.style.removeProperty("--nucleus-scale");
+      });
+
+      closest.classList.add("zoomed");
+      if (!closest.style.getPropertyValue("--zoom")) {
+        closest.style.setProperty("--zoom", "1.75");
+      }
+      if (closest.classList.contains("atom-diagram")) {
+        const zoom = Number(closest.style.getPropertyValue("--zoom")) || 1.75;
+        closest.style.setProperty("--electron-scale", (1 / zoom).toFixed(3));
+        closest.style.setProperty("--nucleus-scale", nucleusScale(zoom));
+      }
+    }
+
+    function updateWheelZoom(event) {
+      const target = event.target.closest(".element-image, .atom-diagram");
+      if (!target || !wikiTooltip.contains(target)) return;
+
+      event.preventDefault();
+      target.classList.add("zoomed");
+      const currentZoom = Number(target.style.getPropertyValue("--zoom")) || 1.75;
+      const nextZoom = Math.min(3.2, Math.max(1.25, currentZoom + (event.deltaY < 0 ? .18 : -.18)));
+      target.style.setProperty("--zoom", nextZoom.toFixed(2));
+      if (target.classList.contains("atom-diagram")) {
+        target.style.setProperty("--electron-scale", (1 / nextZoom).toFixed(3));
+        target.style.setProperty("--nucleus-scale", nucleusScale(nextZoom));
+      }
+    }
+
+    async function hydrateWikiInfo(element) {
+      const image = wikiTooltip.querySelector(".element-image");
+      const link = wikiTooltip.querySelector(".wiki-link");
+      if (!image || !link) return;
+
+      const pageTitle = encodeURIComponent(wikiPageTitle(element).replaceAll(" ", "_"));
+      const fallbackUrl = `https://cs.wikipedia.org/wiki/${pageTitle}`;
+      link.href = fallbackUrl;
+
+      if (!wikiCache.has(element.name)) {
+        try {
+          const response = await fetch(`https://cs.wikipedia.org/api/rest_v1/page/summary/${pageTitle}`);
+          if (!response.ok) throw new Error("Wikipedia summary unavailable");
+          const data = await response.json();
+          wikiCache.set(element.name, {
+            image: data.thumbnail?.source || "",
+            url: data.content_urls?.desktop?.page || fallbackUrl
+          });
+        } catch {
+          wikiCache.set(element.name, { image: "", url: fallbackUrl });
+        }
+      }
+
+      const wikiData = wikiCache.get(element.name);
+      if (wikiTooltip.dataset.symbol !== element.symbol) return;
+      link.href = wikiData.url;
+      const imageSource = imageFallbacks[element.symbol] || wikiData.image || "";
+      if (imageSource) {
+        image.src = imageSource;
+        image.alt = `${element.name} - obrázek z Wikipedie`;
+        image.classList.add("loaded");
+      }
+    }
+
+    function showTooltip(tile, element) {
+      window.clearTimeout(tooltipHideTimer);
+      const source = tile.querySelector(".popover");
+      const rect = tile.getBoundingClientRect();
+      const gap = 10;
+      wikiTooltip.innerHTML = source.innerHTML;
+      wikiTooltip.dataset.symbol = element.symbol;
+      wikiTooltip.style.setProperty("--color", tile.style.getPropertyValue("--color"));
+      wikiTooltip.classList.add("visible");
+
+      wikiTooltip.querySelectorAll(".safety").forEach((el) => {
+        el.addEventListener("mouseenter", () => el.classList.add("hover"));
+        el.addEventListener("mouseleave", () => {
+          if (!el.classList.contains("open")) el.classList.remove("hover");
+        });
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (el.classList.contains("hover") || el.classList.contains("open")) {
+            el.classList.remove("hover", "open");
+          } else {
+            el.closest(".safety-row")?.querySelectorAll(".safety.open").forEach((s) => s.classList.remove("open"));
+            el.classList.add("open");
+          }
+        });
+      });
+      wikiTooltip.querySelectorAll(".rs-chip").forEach((el) => {
+        el.addEventListener("mouseenter", () => el.classList.add("hover"));
+        el.addEventListener("mouseleave", () => {
+          if (!el.classList.contains("open")) el.classList.remove("hover");
+        });
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (el.classList.contains("hover") || el.classList.contains("open")) {
+            el.classList.remove("hover", "open");
+          } else {
+            el.closest(".rs-block")?.querySelectorAll(".rs-chip.open").forEach((c) => c.classList.remove("open"));
+            el.classList.add("open");
+          }
+        });
+      });
+      wikiTooltip.querySelectorAll(".element-image, .atom-diagram").forEach((el) => {
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          wikiTooltip.querySelectorAll(".element-image, .atom-diagram").forEach((other) => {
+            if (other !== el) {
+              other.classList.remove("zoomed");
+              other.style.removeProperty("--zoom");
+              other.style.removeProperty("--electron-scale");
+              other.style.removeProperty("--nucleus-scale");
+              delete other.dataset.zoomLocked;
+            }
+          });
+          if (el.classList.contains("zoomed")) {
+            el.classList.remove("zoomed");
+            el.style.removeProperty("--zoom");
+            el.style.removeProperty("--electron-scale");
+            el.style.removeProperty("--nucleus-scale");
+            el.dataset.zoomLocked = "true";
+          } else {
+            el.dataset.zoomLocked = "true";
+            el.classList.add("zoomed");
+            if (!el.style.getPropertyValue("--zoom")) {
+              el.style.setProperty("--zoom", "1.75");
+            }
+            if (el.classList.contains("atom-diagram")) {
+              const zoom = Number(el.style.getPropertyValue("--zoom")) || 1.75;
+              el.style.setProperty("--electron-scale", (1 / zoom).toFixed(3));
+              el.style.setProperty("--nucleus-scale", nucleusScale(zoom));
+            }
+          }
+        });
+      });
+
+      const tooltipRect = wikiTooltip.getBoundingClientRect();
+      const left = Math.min(
+        window.innerWidth - tooltipRect.width - 8,
+        Math.max(8, rect.left + rect.width / 2 - tooltipRect.width / 2)
+      );
+      let top = rect.top - tooltipRect.height - gap;
+
+      if (top < 8) {
+        top = rect.bottom + gap;
+      }
+
+      if (top + tooltipRect.height > window.innerHeight - 8) {
+        top = window.innerHeight - tooltipRect.height - 8;
+      }
+      if (top < 8) {
+        top = 8;
+      }
+
+      wikiTooltip.style.left = `${left}px`;
+      wikiTooltip.style.top = `${top}px`;
+      hydrateWikiInfo(element);
+    }
+
+    let filterLocked = false;
+
+    function clearTemporaryHighlight() {
+      if (filterLocked) return;
+      table.classList.remove("is-filtering");
+      document.querySelectorAll(".temp-rich").forEach((item) => item.classList.remove("temp-rich"));
+      document.querySelectorAll(".axis-label.active").forEach((item) => item.classList.remove("active"));
+      document.querySelectorAll(".chip.active").forEach((item) => item.classList.remove("active"));
+    }
+
+    function highlightTemporary(type, value, label) {
+      filterLocked = false;
+      clearTemporaryHighlight();
+      hideTooltip();
+      table.classList.add("is-filtering");
+      label.classList.add("active");
+      document.querySelectorAll(`[data-${type}="${value}"]`).forEach((item) => item.classList.add("temp-rich"));
+    }
+
+    let animOrder = 0;
+
+    Object.entries(groups).forEach(([key, group]) => {
+      const item = document.createElement("span");
+      item.className = "chip";
+      item.dataset.group = key;
+      item.style.setProperty("--order", animOrder++);
+      item.innerHTML = `<span class="dot" style="--color:${group.color}"></span>${group.label}`;
+      item.addEventListener("mouseenter", () => {
+        if (!filterLocked) highlightTemporary("group", key, item);
+      });
+      item.addEventListener("click", () => {
+        if (filterLocked) {
+          filterLocked = false;
+          clearTemporaryHighlight();
+        } else {
+          highlightTemporary("group", key, item);
+          filterLocked = true;
+          hideTooltip();
+        }
+      });
+      item.addEventListener("wheel", (event) => {
+        event.preventDefault();
+        if (!filterLocked) highlightTemporary("group", key, item);
+      }, { passive: false });
+      legend.appendChild(item);
+    });
+    legend.addEventListener("mouseleave", () => {
+      if (!filterLocked) clearTemporaryHighlight();
+    });
+
+    const columnNames = {
+      1: "I. A",
+      2: "II. A",
+      3: "III. B",
+      4: "IV. B",
+      5: "V. B",
+      6: "VI. B",
+      7: "VII. B",
+      8: "VIII. B",
+      9: "VIII. B",
+      10: "VIII. B",
+      11: "I. B",
+      12: "II. B",
+      13: "III. A",
+      14: "IV. A",
+      15: "V. A",
+      16: "VI. A",
+      17: "VII. A",
+      18: "VIII. A"
+    };
+
+    for (let column = 1; column <= 18; column += 1) {
+      const label = document.createElement("div");
+      label.className = "axis-label column";
+      label.style.setProperty("--order", animOrder++);
+      label.innerHTML = `${column}<span>${columnNames[column]}</span>`;
+      label.style.gridColumn = column + 1;
+      label.dataset.axis = "column";
+      label.addEventListener("mouseenter", () => {
+        if (!filterLocked) highlightTemporary("column", column, label);
+      });
+      label.addEventListener("click", () => {
+        if (filterLocked) {
+          filterLocked = false;
+          clearTemporaryHighlight();
+        } else {
+          highlightTemporary("column", column, label);
+          filterLocked = true;
+        }
+      });
+      table.appendChild(label);
+    }
+
+    [
+      [1, "1"], [2, "2"], [3, "3"], [4, "4"], [5, "5"], [6, "6"], [7, "7"],
+      [9, "6"], [10, "7"]
+    ].forEach(([row, labelText]) => {
+      const label = document.createElement("div");
+      label.className = "axis-label row";
+      label.style.setProperty("--order", animOrder++);
+      label.textContent = labelText;
+      label.style.gridColumn = 1;
+      label.style.gridRow = row + 1;
+      label.dataset.axis = "row";
+      label.addEventListener("mouseenter", () => {
+        if (!filterLocked) highlightTemporary("period-row", row, label);
+      });
+      label.addEventListener("click", () => {
+        if (filterLocked) {
+          filterLocked = false;
+          clearTemporaryHighlight();
+        } else {
+          highlightTemporary("period-row", row, label);
+          filterLocked = true;
+        }
+      });
+      table.appendChild(label);
+    });
+
+    elements.forEach((element) => {
+      const group = groups[element.group];
+      const facts = physicalFacts(element, group);
+      const pageTitle = encodeURIComponent(wikiPageTitle(element).replaceAll(" ", "_"));
+      const tile = document.createElement("article");
+      tile.className = `element${saturatedSymbols.has(element.symbol) ? " is-rich" : ""}`;
+      tile.style.setProperty("--order", animOrder++);
+      tile.tabIndex = 0;
+      tile.style.gridColumn = element.col + 1;
+      tile.style.gridRow = element.row + 1;
+      tile.dataset.column = element.col;
+      tile.dataset.periodRow = element.row;
+      tile.dataset.group = element.group;
+      tile.style.setProperty("--color", group.color);
+      tile.setAttribute("aria-label", `${element.name}, ${element.symbol}`);
+      tile.innerHTML = `
+        <span class="number">${element.number}</span>
+        <span class="symbol">${element.symbol}</span>
+        <span class="name">${element.name}</span>
+        <div class="popover" role="tooltip">
+          <h2>${element.name}<span class="big-symbol">${element.symbol}</span></h2>
+          <div class="tooltip-media">
+            <div class="visuals">
+              <img class="element-image" loading="lazy">
+              <div class="atom-diagram" aria-label="Bohrův model atomu: ${element.name}">
+                ${atomDiagram(element)}
+              </div>
+              <a class="wiki-link" href="https://cs.wikipedia.org/wiki/${pageTitle}" target="_blank" rel="noopener">Otevřít<br>Wikipedii<span>W</span></a>
+            </div>
+            <div class="tooltip-summary">
+              <span class="atom-meta">Slupky: ${electronShells(element.number, element.symbol).join("-")} | elektrony: ${element.number}</span>
+              <div class="facts">
+                <div class="fact"><span>Periodické číslo</span><strong>${element.number}</strong></div>
+                <div class="fact"><span>Vzhled</span><strong>${facts.appearance}</strong></div>
+                <div class="fact"><span>Hustota</span><strong>${facts.density}</strong></div>
+                <div class="fact"><span>Skupenství</span><strong>${facts.state}</strong></div>
+                <div class="fact"><span>Tvrdost</span><strong>${facts.hardness}</strong></div>
+                <div class="fact"><span>Teplota tání</span><strong>${facts.melt}</strong></div>
+                <div class="fact"><span>Teplota varu</span><strong>${facts.boil}</strong></div>
+                <div class="fact"><span>Skupina</span><strong>${group.label}</strong></div>
+              </div>
+              ${safetyMarkup(element)}
+            </div>
+          </div>
+          <p>${element.note}</p>
+        </div>
+      `;
+      table.appendChild(tile);
+      tile.addEventListener("mouseenter", () => showTooltip(tile, element));
+      tile.addEventListener("mouseleave", scheduleHideTooltip);
+      tile.addEventListener("focus", () => {
+        if (wikiTooltip.classList.contains("visible") && wikiTooltip.dataset.symbol === element.symbol) return;
+        tooltipOpenedByFocus = true;
+        window.clearTimeout(tooltipHideTimer);
+        showTooltip(tile, element);
+      });
+      tile.addEventListener("blur", scheduleHideTooltip);
+      tile.addEventListener("click", (e) => {
+        window.clearTimeout(tooltipHideTimer);
+        if (tooltipOpenedByFocus) {
+          tooltipOpenedByFocus = false;
+          return;
+        }
+        if (wikiTooltip.classList.contains("visible") && wikiTooltip.dataset.symbol === element.symbol) {
+          tile.blur();
+          hideTooltip();
+        } else {
+          showTooltip(tile, element);
+        }
+      });
+    });
+    table.addEventListener("mouseleave", () => {
+      if (!filterLocked) clearTemporaryHighlight();
+    });
+
+    wikiTooltip.addEventListener("mouseenter", () => window.clearTimeout(tooltipHideTimer));
+    wikiTooltip.addEventListener("mousemove", updateMediaZoom);
+    wikiTooltip.addEventListener("touchmove", (e) => {
+      const touch = e.touches[0];
+      updateMediaZoom({ clientX: touch.clientX, clientY: touch.clientY });
+    });
+    wikiTooltip.addEventListener("wheel", updateWheelZoom, { passive: false });
+    wikiTooltip.addEventListener("mouseleave", hideTooltip);
+    window.addEventListener("scroll", hideTooltip, { passive: true });
+    window.addEventListener("resize", hideTooltip);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") hideTooltip();
+    });
+    document.addEventListener("touchstart", (e) => {
+      if (wikiTooltip.classList.contains("visible") && !wikiTooltip.contains(e.target) && !e.target.closest(".element")) {
+        hideTooltip();
+      }
+    });
+
+    const selectedElements = elements.filter((element) => saturatedSymbols.has(element.symbol));
+    const quizElements = selectedElements.length ? selectedElements : elements;
+    const questionLabel = document.getElementById("questionLabel");
+    const questionText = document.getElementById("questionText");
+    const answerInput = document.getElementById("answerInput");
+    const feedback = document.getElementById("feedback");
+    const score = document.getElementById("score");
+    const tableShell = document.getElementById("tableShell");
+    const quizBody = document.getElementById("quizBody");
+    const quizToggle = document.getElementById("quizToggle");
+    const quizCard = document.getElementById("quizCard");
+    const quizResults = document.getElementById("quizResults");
+    const resultsSummary = document.getElementById("resultsSummary");
+    const resultsList = document.getElementById("resultsList");
+    const resultsClose = document.getElementById("resultsClose");
+    const header = document.querySelector("header");
+    let mode = "symbolToName";
+    let activeQuestionMode = "symbolToName";
+    let current = null;
+    let correct = 0;
+    let total = 0;
+    let answerChecked = false;
+    let autoNextTimer = 0;
+    let quizQueue = [];
+    let wrongAnswers = [];
+    let quizDone = false;
+
+    function normalize(value) {
+      return value
+        .trim()
+        .toLocaleLowerCase("cs-CZ")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function pickQuestion() {
+      window.clearTimeout(autoNextTimer);
+      answerChecked = false;
+
+      if (quizQueue.length > 0) {
+        current = quizQueue.shift();
+      } else if (quizDone) {
+        return;
+      } else {
+        current = quizElements[Math.floor(Math.random() * quizElements.length)];
+      }
+
+      activeQuestionMode = mode === "mixed"
+        ? (Math.random() < .5 ? "symbolToName" : "nameToSymbol")
+        : mode;
+      feedback.textContent = "";
+      feedback.className = "feedback";
+      answerInput.value = "";
+      questionLabel.textContent = activeQuestionMode === "symbolToName" ? "Napiš název prvku" : "Napiš chemickou značku";
+      questionText.textContent = activeQuestionMode === "symbolToName" ? current.symbol : current.name;
+      answerInput.placeholder = activeQuestionMode === "symbolToName" ? "např. kyslík" : "např. O";
+      answerInput.focus();
+    }
+
+    function expectedAnswer() {
+      return activeQuestionMode === "symbolToName" ? current.name : current.symbol;
+    }
+
+    function checkAnswer() {
+      if (answerChecked) {
+        pickQuestion();
+        return;
+      }
+
+      const answer = answerInput.value;
+      if (!answer.trim()) {
+        feedback.textContent = "Nejdřív napiš odpověď.";
+        feedback.className = "feedback bad";
+        return;
+      }
+
+      total += 1;
+      answerChecked = true;
+      const isCorrect = normalize(answer) === normalize(expectedAnswer());
+      if (isCorrect) {
+        correct += 1;
+        feedback.textContent = "Správně.";
+        feedback.className = "feedback ok";
+      } else {
+        feedback.textContent = `Špatně. Správná odpověď je ${expectedAnswer()}.`;
+        feedback.className = "feedback bad";
+        if (mode === "all") {
+          wrongAnswers.push({ element: current, expected: expectedAnswer(), given: answer });
+        }
+      }
+      score.textContent = `${correct} / ${total}`;
+
+      if (mode === "all" && quizQueue.length === 0) {
+        quizDone = true;
+        setTimeout(showResults, 1000);
+      } else {
+        autoNextTimer = window.setTimeout(pickQuestion, 1000);
+      }
+    }
+
+    function showResults() {
+      quizCard.style.display = "none";
+      if (wrongAnswers.length === 0) {
+        resultsSummary.textContent = `Všechno správně! ${correct} / ${total}`;
+        resultsList.style.display = "none";
+      } else {
+        resultsSummary.textContent = `Hotovo. ${correct} / ${total} správně. Problémové prvky:`;
+        resultsList.innerHTML = wrongAnswers.map(w => {
+          const modeText = w.element.symbol;
+          return `<li class="wrong"><b>${modeText}</b> – tvoje odpověď: "${w.given}", správně: ${w.expected}</li>`;
+        }).join("");
+        resultsList.style.display = "";
+      }
+      quizResults.style.display = "";
+    }
+
+    function closeQuiz() {
+      window.clearTimeout(autoNextTimer);
+
+      const quiz = quizToggle.closest(".quiz");
+      const rect = quiz.getBoundingClientRect();
+      const dx = window.innerWidth - rect.right + 20;
+      const dy = window.innerHeight - rect.bottom + 20;
+
+      quiz.style.transition = "transform .35s ease, opacity .35s ease";
+      quiz.style.transform = `translate(${dx}px, ${dy}px) scale(.5)`;
+      quiz.style.opacity = "0";
+
+      quiz.addEventListener("transitionend", () => {
+        header.classList.remove("quiz-mode");
+        quiz.classList.remove("open");
+        quiz.classList.add("closed");
+        quizToggle.style.display = "";
+        quizBody.style.transition = "";
+        quizBody.classList.remove("visible");
+        quizBody.style.maxHeight = "";
+        quizBody.style.opacity = "";
+        tableShell.classList.remove("hidden");
+        hideTooltip();
+        clearTemporaryHighlight();
+        quizQueue = [];
+        wrongAnswers = [];
+        quizDone = false;
+        correct = 0;
+        total = 0;
+        score.textContent = "0 / 0";
+        quizCard.style.display = "";
+        quizResults.style.display = "none";
+        answerChecked = false;
+        current = null;
+        quiz.style.transition = "";
+        quiz.style.transform = "";
+        quiz.style.opacity = "";
+      }, { once: true });
+    }
+
+    quizToggle.addEventListener("click", () => {
+      correct = 0;
+      total = 0;
+      score.textContent = "0 / 0";
+      wrongAnswers = [];
+      quizDone = false;
+      quizCard.style.display = "";
+      quizResults.style.display = "none";
+      if (mode === "all") {
+        quizQueue = [...quizElements].sort(() => Math.random() - 0.5);
+      } else {
+        quizQueue = [];
+      }
+      pickQuestion();
+      header.classList.add("quiz-mode");
+      const quiz = quizToggle.closest(".quiz");
+      quiz.classList.remove("closed");
+      quiz.classList.add("open");
+      quizToggle.style.display = "none";
+      tableShell.classList.add("hidden");
+      quizBody.style.transition = "none";
+      quizBody.classList.add("visible");
+      quizBody.style.maxHeight = "600px";
+      quizBody.style.opacity = "1";
+      hideTooltip();
+      clearTemporaryHighlight();
+
+      const rect = quiz.getBoundingClientRect();
+      const dx = window.innerWidth - rect.right + 20;
+      const dy = window.innerHeight - rect.bottom + 20;
+      quiz.style.transition = "none";
+      quiz.style.transform = `translate(${dx}px, ${dy}px) scale(.5)`;
+      quiz.style.opacity = "0";
+      quiz.offsetHeight;
+      quiz.style.transition = "transform .35s ease, opacity .35s ease";
+      quiz.style.transform = "";
+      quiz.style.opacity = "1";
+      quiz.addEventListener("transitionend", () => {
+        quiz.style.transition = "";
+        quiz.style.transform = "";
+        quiz.style.opacity = "";
+        quizBody.style.transition = "";
+      }, { once: true });
+    });
+
+    document.querySelectorAll("[data-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll("[data-mode]").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        mode = button.dataset.mode;
+        if (mode === "all") {
+          quizQueue = [...quizElements].sort(() => Math.random() - 0.5);
+        } else {
+          quizQueue = [];
+        }
+        wrongAnswers = [];
+        quizDone = false;
+        correct = 0;
+        total = 0;
+        score.textContent = "0 / 0";
+        quizCard.style.display = "";
+        quizResults.style.display = "none";
+        pickQuestion();
+      });
+    });
+
+    document.getElementById("checkAnswer").addEventListener("click", checkAnswer);
+    document.getElementById("nextQuestion").addEventListener("click", pickQuestion);
+    document.getElementById("giveUp").addEventListener("click", closeQuiz);
+    resultsClose.addEventListener("click", closeQuiz);
+    answerInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (answerChecked) {
+          pickQuestion();
+        } else {
+          checkAnswer();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
